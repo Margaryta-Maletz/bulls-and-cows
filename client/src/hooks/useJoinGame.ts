@@ -20,13 +20,15 @@ interface GameState {
   question: ActiveQuestion | null;
   isSubmitting: boolean;
   chatMsgs: ChatMsg[];
+  showBonus: boolean;
 }
 
 type GameAction =
   | ServerToStudentMsg
   | { type: 'submit' }
   | { type: 'chat_sent'; text: string; from: string }
-  | { type: 'answer_sent'; questionId: string; answer: string; from: string };
+  | { type: 'answer_sent'; questionId: string; answer: string; from: string }
+  | { type: 'hide_bonus' };
 
 const INIT: GameState = {
   phase: 'join',
@@ -34,6 +36,7 @@ const INIT: GameState = {
   question: null,
   isSubmitting: false,
   chatMsgs: [],
+  showBonus: false,
 };
 
 let msgSeq = 0;
@@ -71,6 +74,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         phase: 'waiting',
         isSubmitting: false,
+        showBonus: action.correct,
         chatMsgs: [...state.chatMsgs, {
           id: String(++msgSeq),
           from: LABELS.chatSystem,
@@ -79,6 +83,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         }],
       };
     }
+    case 'hide_bonus':
+      return { ...state, showBonus: false };
     case 'leaderboard':
       return state;
     case 'chat_from_host':
@@ -124,6 +130,7 @@ export interface JoinGameApi {
   question: ActiveQuestion | null;
   isSubmitting: boolean;
   chatMsgs: ChatMsg[];
+  showBonus: boolean;
   nameInput: string;
   answer: string;
   status: 'connecting' | 'open' | 'closed';
@@ -132,6 +139,7 @@ export interface JoinGameApi {
   handleNameChange: (e: InputChange) => void;
   handleAnswerChange: (e: InputChange) => void;
   handleChatSend: (text: string) => void;
+  hideBonus: () => void;
 }
 
 export function useJoinGame(): JoinGameApi {
@@ -187,10 +195,12 @@ export function useJoinGame(): JoinGameApi {
     dispatch({ type: 'chat_sent', text, from: studentName });
   }, [send, studentName]);
 
-  const { phase, error, question, isSubmitting, chatMsgs } = game;
+  const hideBonus = useCallback(() => { dispatch({ type: 'hide_bonus' }); }, []);
+
+  const { phase, error, question, isSubmitting, chatMsgs, showBonus } = game;
   return {
-    phase, error, question, isSubmitting, chatMsgs,
+    phase, error, question, isSubmitting, chatMsgs, showBonus,
     nameInput, answer, status,
-    handleJoin, handleAnswer, handleNameChange, handleAnswerChange, handleChatSend,
+    handleJoin, handleAnswer, handleNameChange, handleAnswerChange, handleChatSend, hideBonus,
   };
 }

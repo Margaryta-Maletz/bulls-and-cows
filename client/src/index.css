@@ -278,6 +278,37 @@ li {
   flex-wrap: wrap;
 }
 
+/* ── Bonus animation ──────────────────────────────────────────── */
+
+.bonus-anim {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3rem;
+  font-weight: 700;
+  color: #22c55e;
+  pointer-events: none;
+  z-index: 100;
+  animation: bonus-instant 0.1s forwards;
+}
+
+@keyframes bonus-instant {
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bonus-anim {
+    animation: bonus-fly 1.8s ease-out forwards;
+  }
+
+  @keyframes bonus-fly {
+    0%   { opacity: 1; transform: translateX(-50%) scale(1); }
+    60%  { opacity: 1; transform: translateX(-50%) translateY(-60px) scale(1.6); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-100px) scale(0.8); }
+  }
+}
+
 /* ── Chat ─────────────────────────────────────────────────────── */
 
 .chat {

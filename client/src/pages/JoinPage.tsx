@@ -23,7 +23,9 @@ export default function JoinPage() {
   const error       = game.error;
   const question    = game.question;
   const submitting  = game.isSubmitting;
+  const showBonus   = game.showBonus;
   const msgs        = game.chatMsgs;
+  const hideBonus   = game.hideBonus;
   const nick        = game.nameInput;
   const reply       = game.answer;
   const onJoin      = game.handleJoin;
@@ -61,6 +63,7 @@ export default function JoinPage() {
 
   return (
     <>
+      {showBonus && <div className="bonus-anim" onAnimationEnd={hideBonus}>+1</div>}
       {isJoin && f0}
       {isWaiting && (
         <div>
