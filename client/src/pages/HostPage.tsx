@@ -27,6 +27,7 @@ export default function HostPage() {
     if (!lastMessage) return;
     switch (lastMessage.type) {
       case 'auth_success':
+        // oxlint-disable-next-line react/set-state-in-effect -- WebSocket messages drive this component's state.
         setPhase('ready');
         setAuthError('');
         fetch('/questions/week-09.json')

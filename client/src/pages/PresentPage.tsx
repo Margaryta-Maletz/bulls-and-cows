@@ -25,6 +25,7 @@ export default function PresentPage() {
     if (!lastMessage) return;
     switch (lastMessage.type) {
       case 'question_started':
+        // oxlint-disable-next-line react/set-state-in-effect -- WebSocket messages drive this component's state.
         setQuestion({ code: lastMessage.code, startedAt: lastMessage.startedAt, timeoutSec: lastMessage.timeoutSec });
         setAnswerCount(0);
         setTotalCount(0);

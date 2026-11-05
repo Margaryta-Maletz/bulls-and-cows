@@ -31,6 +31,7 @@ export default function JoinPage() {
   const [question, setQuestion]     = useState<ActiveQuestion | null>(null);
   const [result, setResult]         = useState<RoundResult | null>(null);
   const [scores, setScores]         = useState<Score[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (status !== 'open') return;
@@ -48,6 +49,7 @@ export default function JoinPage() {
     switch (lastMessage.type) {
       case 'welcome':
         try { sessionStorage.setItem('reconnectToken', lastMessage.reconnectToken); } catch {}
+        // oxlint-disable-next-line react/set-state-in-effect -- WebSocket messages drive this component's state.
         setPhase('waiting');
         setError('');
         break;
@@ -57,6 +59,7 @@ export default function JoinPage() {
       case 'question_started':
         setAnswer('');
         setError('');
+        setIsSubmitting(false);
         setQuestion({ id: lastMessage.questionId, code: lastMessage.code });
         setPhase('answering');
         break;
@@ -64,6 +67,7 @@ export default function JoinPage() {
         setPhase('answered');
         break;
       case 'answer_rejected':
+        setIsSubmitting(false);
         setError(lastMessage.reason);
         break;
       case 'round_result':
@@ -90,9 +94,10 @@ export default function JoinPage() {
 
   const handleAnswer = useCallback((e: FormSubmit) => {
     e.preventDefault();
-    if (!question || !answer.trim()) return;
+    if (!question || !answer.trim() || isSubmitting) return;
+    setIsSubmitting(true);
     send({ type: 'submit_answer', questionId: question.id, answer: answer.trim() });
-  }, [question, answer, send]);
+  }, [question, answer, isSubmitting, send]);
 
   const handleNameChange   = useCallback((e: InputChange) => { setNameInput(e.currentTarget.value); }, []);
   const handleAnswerChange = useCallback((e: InputChange) => { setAnswer(e.currentTarget.value); }, []);
@@ -127,8 +132,9 @@ export default function JoinPage() {
             value={answer}
             onChange={handleAnswerChange}
             placeholder={LABELS.answerPrompt}
+            disabled={isSubmitting}
           />
-          <button type="submit">{LABELS.submitBtn}</button>
+          <button type="submit" disabled={isSubmitting}>{LABELS.submitBtn}</button>
         </form>
       )}
       {phase === 'answered' && (

@@ -14,45 +14,47 @@ export function useSocket<TIn>(url: string): UseSocketResult<TIn> {
   const [lastMessage, setLastMessage] = useState<TIn | null>(null);
   const [status, setStatus]           = useState<SocketStatus>('connecting');
 
-  const wsRef        = useRef<WebSocket | null>(null);
-  const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const unmountedRef = useRef(false);
-  const connectRef   = useRef<() => void>(() => undefined);
-
-  connectRef.current = () => {
-    if (unmountedRef.current) return;
-
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
-    setStatus('connecting');
-
-    ws.onopen = () => setStatus('open');
-
-    ws.onmessage = (ev: MessageEvent<string>) => {
-      try {
-        setLastMessage(JSON.parse(ev.data) as TIn);
-      } catch {
-        // ignore unparseable frames
-      }
-    };
-
-    ws.onclose = () => {
-      setStatus('closed');
-      if (!unmountedRef.current) {
-        timerRef.current = setTimeout(() => connectRef.current(), RECONNECT_DELAY_MS);
-      }
-    };
-
-    ws.onerror = () => ws.close(); // onclose fires next and handles reconnect
-  };
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    unmountedRef.current = false;
-    connectRef.current();
+    const lifecycle = { disposed: false };
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let socket: WebSocket | null = null;
+
+    const connect = () => {
+      if (lifecycle.disposed) return;
+
+      const ws = new WebSocket(url);
+      socket = ws;
+      wsRef.current = ws;
+      setStatus('connecting');
+
+      ws.onopen = () => setStatus('open');
+
+      ws.onmessage = (ev: MessageEvent<string>) => {
+        try {
+          setLastMessage(JSON.parse(ev.data) as TIn);
+        } catch {
+          // ignore unparseable frames
+        }
+      };
+
+      ws.onclose = () => {
+        setStatus('closed');
+        if (!lifecycle.disposed) {
+          reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
+        }
+      };
+
+      ws.onerror = () => ws.close(); // onclose fires next and handles reconnect
+    };
+
+    connect();
     return () => {
-      unmountedRef.current = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
-      wsRef.current?.close();
+      lifecycle.disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      socket?.close();
+      if (wsRef.current === socket) wsRef.current = null;
     };
   }, [url]);
 
