@@ -1,5 +1,6 @@
 import express from 'express';
 import http from 'node:http';
+import { join } from 'node:path';
 import { WebSocketServer, WebSocket } from 'ws';
 import { GameSession } from './session.js';
 import { loadQuestions } from './questions.js';
@@ -19,6 +20,8 @@ const connections = new Map<WebSocket, ConnectionInfo>();
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
+
+app.use('/questions', express.static(join(__dirname, '..', '..', 'questions')));
 
 wss.on('connection', (ws, req) => {
   const url = new URL(req.url ?? '/', `http://localhost`);
