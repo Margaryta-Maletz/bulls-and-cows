@@ -299,14 +299,57 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 
 ### Phase 2 — Полный игровой поток (~3–4 ч)
 
-- [ ] `PresentPage` (`/present`): задача + таймер-полоса (от `startedAt`)
-- [ ] Загрузка задач из `week-09/10.json`
-- [ ] `normalizer.ts`: полная цепочка включая числа, многострочность, undefined
-- [ ] `HostPage`: список всех ответов после раунда
-- [ ] Кнопка `override_score` у каждого ответа
-- [ ] `Scoreboard`: живое обновление при изменении очков
-- [ ] Блокировка повторной отправки (`answer_rejected` + UI-блокировка)
-- [ ] Error-события: `join_failed`, `answer_rejected`, `auth_failed`
+#### 2.1 Shared types: present-события (~10 мин)
+- [ ] Добавить `timer_tick { remaining: number }`, `answer_count { count: number }`, `question_ended { correctAnswer: string }` в `ServerToPresentMsg`
+- [ ] Убедиться что `question_started` уже содержит `timeoutSec` и `startedAt`
+
+#### 2.2 Server: таймер и broadcast для Present (~20 мин)
+- [ ] В `session.ts`: запускать `setInterval` при `startQuestion`, рассылать `timer_tick` каждую секунду present-клиентам
+- [ ] В `handlers.ts`: при `submit_answer` — broadcast `answer_count` present-клиентам
+- [ ] При `endQuestion` — broadcast `question_ended` с правильным ответом
+
+#### 2.3 Timer компонент (~15 мин)
+- [ ] `client/src/components/Timer.tsx`: принимает `startedAt` и `timeoutSec`
+- [ ] Вычисляет `remaining = Math.max(0, timeoutSec - (Date.now() - startedAt) / 1000)` на каждом тике
+- [ ] Рендерит прогресс-бар (`<progress value remaining max timeoutSec>`)
+
+#### 2.4 PresentPage (~20 мин)
+- [ ] `client/src/pages/PresentPage.tsx`: подключается через `wsUrl('present')`
+- [ ] Показывает код вопроса при `question_started`
+- [ ] `<Timer startedAt timeoutSec>` — полоса убывает
+- [ ] Счётчик из `answer_count`
+- [ ] Финальный экран при `question_ended` с правильным ответом
+- [ ] Маршрут `/present` в `App.tsx`
+
+#### 2.5 CodeBlock компонент (~15 мин)
+- [ ] `client/src/components/CodeBlock.tsx`: обёртка над highlight.js (UMD с cdnjs, пинить версию)
+- [ ] Применить в `PresentPage` и `JoinPage` вместо `<pre><code>`
+
+#### 2.6 HostPage: список ответов + override_score (~20 мин)
+- [ ] После `round_results` показывать таблицу: студент | ответ | авто-оценка (✓/✗)
+- [ ] Кнопки `+` / `−` у каждого ответа → `{ type: 'override_score', studentId, correct: boolean }`
+
+#### 2.7 Scoreboard: живое обновление (~10 мин)
+- [ ] `HostPage`: `scoreboard_update` обновляет таблицу в реальном времени
+- [ ] `JoinPage`: `leaderboard` приходит после раунда, таблица видна в фазе `result`
+- [ ] Убедиться что `Scoreboard` корректно ре-рендерится при смене `scores[]`
+
+#### 2.8 Блокировка повторной отправки (~10 мин)
+- [ ] После `answer_received`: кнопка отправки и инпут `disabled`, фаза `'answered'`
+- [ ] При `answer_rejected`: форма остаётся активной, ошибка показывается, повторная отправка разрешена
+
+#### 2.9 Error-события: join_failed, auth_failed (~10 мин)
+- [ ] `join_failed`: форма join остаётся открытой, имя не очищается
+- [ ] `auth_failed`: форма auth остаётся, поле токена очищается
+- [ ] Проверить что оба случая уже корректно обработаны
+
+#### 2.10 Загрузка задач: выбор файла (~15 мин)
+- [ ] `GET /questions` на сервере возвращает список JSON-файлов из папки `questions/`
+- [ ] `HostPage`: `<select>` для выбора файла перед запуском; при смене — перезагрузка задач
+
+#### 2.11 Сквозной тест (~20 мин)
+- [ ] Ручной тест в 4 вкладках: host + 2 students + present
+- [ ] Сценарий: вход → запуск вопроса → ответы → завершение → override → таблица обновилась
 
 ### Phase 3 — Чат + UX (~4–6 ч)
 
