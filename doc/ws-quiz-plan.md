@@ -353,13 +353,57 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 
 ### Phase 3 — Чат + UX (~4–6 ч)
 
-- [ ] `Chat` компонент: рендер через `textContent`, не `innerHTML`
-- [ ] `HostPage`: список чатов, индикатор непрочитанных
-- [ ] `CodeBlock`: highlight.js из cdnjs (пинить версию)
-- [ ] `Timer`: CSS-анимация полосы
-- [ ] Анимация +N очков у студента
-- [ ] Обработка разрыва соединения (reconnect + toast)
-- [ ] Адаптив: `/join` работает на телефоне
+#### 3.1 CSS: базовые стили (~30 мин)
+- [ ] Стили для `<form>`, `<button>`, `<input>`, `<select>` — единый look
+- [ ] `<pre><code>`: паддинги, `overflow-x: auto`, скролл длинного кода
+- [ ] `.scoreboard`: стили таблицы рекордов
+- [ ] Общий контейнер страниц: max-width, padding
+
+#### 3.2 Timer: CSS transition (~15 мин)
+- [ ] Заменить `<progress>` на `<div>` с `width: X%` и `transition: width 0.5s linear`
+- [ ] Цвет по остатку: >50% зелёный, 20–50% жёлтый, <20% красный
+
+#### 3.3 Chat компонент (~20 мин)
+- [ ] `client/src/components/Chat.tsx`: принимает `messages[]` + `onSend`
+- [ ] Рендер через JSX (React экранирует автоматически — нет XSS, нет `dangerouslySetInnerHTML`)
+- [ ] Автоскролл к последнему сообщению через `useRef`
+- [x] `CodeBlock`: highlight.js из cdnjs — выполнено в Phase 2
+
+#### 3.4 Chat: JoinPage интеграция (~20 мин)
+- [ ] Обработать `chat_from_host` → добавлять в список сообщений
+- [ ] Отправка `chat_to_host` через `<Chat>` компонент
+- [ ] Показывать в фазах `waiting`, `answered`, `result`
+
+#### 3.5 Chat: HostPage интеграция (~30 мин)
+- [ ] Обработать `chat_from_student` → список по каждому студенту
+- [ ] Отправка `chat_to_student` с выбором получателя
+- [ ] Индикатор непрочитанных: счётчик новых сообщений
+
+#### 3.6 Анимация +N очков у студента (~15 мин)
+- [ ] После `round_result` с `correct: true`: показать `+1` анимацией
+- [ ] CSS `@keyframes`: fade-in → slide-up → fade-out (~2 с)
+- [ ] Реализовать через `useState<boolean>` + `onAnimationEnd` → сброс
+
+#### 3.7 Reconnect toast (~15 мин)
+- [ ] При переходе `closed → open` в `useSocket`: показать toast «Reconnected»
+- [ ] Toast: фиксированная позиция, появляется на 2 с затем исчезает
+- [ ] CSS: `position: fixed; bottom: 16px` + анимация появления
+
+#### 3.8 Адаптив /join (~25 мин)
+- [ ] Input, button: `min-height: 44px` (touch target)
+- [ ] `<CodeBlock>`: `overflow-x: auto` для длинного кода
+- [ ] Проверить верстку на 375px через DevTools
+
+#### 3.9 PresentPage UX (~15 мин)
+- [ ] Крупный шрифт кода для экрана аудитории (`font-size: 1.4rem+`)
+- [ ] Счётчик ответов: крупный, контрастный
+- [ ] Финальный экран: правильный ответ выделен акцентным цветом
+
+#### 3.10 Сквозной тест Phase 3 (~20 мин)
+- [ ] Тест чата: студент → ведущий и ведущий → студент
+- [ ] Тест reconnect: закрыть/открыть вкладку студента, проверить toast
+- [ ] Тест адаптив: DevTools 375px на `/join`
+- [ ] Проверить анимации (`+1`, timer-bar, toast)
 
 ### Phase 4 — Деплой (~2–3 ч)
 
