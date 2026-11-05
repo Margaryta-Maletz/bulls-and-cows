@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Question, Score, ServerToHostMsg, StudentRoundResult } from '@ws-quiz/shared';
 import { useSocket, wsUrl } from '../hooks/useSocket.ts';
 import Scoreboard from '../components/Scoreboard.tsx';
+import { HOST } from '../labels.ts';
 
-type Phase = 'auth' | 'ready' | 'running' | 'ended';
+type Phase       = 'auth' | 'ready' | 'running' | 'ended';
+type FormSubmit  = { preventDefault(): void };
+type InputChange = { currentTarget: { value: string } };
 
 export default function HostPage() {
   const { send, lastMessage, status } = useSocket<ServerToHostMsg>(wsUrl());
@@ -32,7 +35,7 @@ export default function HostPage() {
             setQuestions(qs);
             if (qs.length > 0) setSelectedId(qs[0].id);
           })
-          .catch(() => {/* no questions available */});
+          .catch(() => { /* no questions available */ });
         break;
       case 'auth_failed':
         setAuthError(lastMessage.reason);
@@ -53,12 +56,12 @@ export default function HostPage() {
     }
   }, [lastMessage]);
 
-  const handleAuth = useCallback((e: { preventDefault(): void }) => {
+  const handleAuth = useCallback((e: FormSubmit) => {
     e.preventDefault();
     send({ type: 'host_auth', token: tokenInput });
   }, [tokenInput, send]);
 
-  const handleStart = useCallback((e: { preventDefault(): void }) => {
+  const handleStart = useCallback((e: FormSubmit) => {
     e.preventDefault();
     if (!selectedId) return;
     setActiveId(selectedId);
@@ -72,75 +75,78 @@ export default function HostPage() {
     send({ type: 'end_question', questionId: activeId });
   }, [activeId, send]);
 
+  const handleTokenChange    = useCallback((e: InputChange) => { setTokenInput(e.currentTarget.value); }, []);
+  const handleSelectChange   = useCallback((e: InputChange) => { setSelectedId(e.currentTarget.value); }, []);
+  const handleTimeoutChange  = useCallback((e: InputChange) => { setTimeoutSec(Number(e.currentTarget.value)); }, []);
+  const handleOverride       = useCallback((studentId: string, correct: boolean) => () => {
+    send({ type: 'override_score', studentId, correct });
+  }, [send]);
+
+  const questionOptions = questions.map(q => (
+    <option key={q.id} value={q.id}>{q.id}</option>
+  ));
+
+  const resultItems = results.map(r => (
+    <li key={r.studentId}>
+      {r.name}{': '}<code>{r.answer}</code>
+      {r.correct ? HOST.resultCorrect : HOST.resultWrong}
+      <button type="button" onClick={handleOverride(r.studentId, true)}>{HOST.addPoint}</button>
+      <button type="button" onClick={handleOverride(r.studentId, false)}>{HOST.removePoint}</button>
+    </li>
+  ));
+
   if (status === 'closed') {
-    return <p>Переподключение...</p>;
-  }
-
-  if (phase === 'auth') {
-    return (
-      <form onSubmit={handleAuth}>
-        <h1>Ведущий</h1>
-        {authError && <p style={{ color: 'red' }}>{authError}</p>}
-        <input
-          type="password"
-          value={tokenInput}
-          onChange={e => setTokenInput(e.target.value)}
-          placeholder="Токен ведущего"
-        />
-        <button type="submit">Войти</button>
-      </form>
-    );
-  }
-
-  if (phase === 'running') {
-    return (
-      <div>
-        <h1>Вопрос: {activeId}</h1>
-        <p>{'Ответили: ' + String(answeredCount) + ' / ' + String(studentCount)}</p>
-        <button type="button" onClick={handleEnd}>Завершить раунд</button>
-      </div>
-    );
+    return <p>{HOST.reconnecting}</p>;
   }
 
   return (
-    <div>
-      <h1>Панель ведущего</h1>
-      <p>Студентов в сессии: {studentCount}</p>
-
-      {phase === 'ended' && results.length > 0 && (
-        <section>
-          <h2>Результаты раунда</h2>
-          <ul>
-            {results.map(r => (
-              <li key={r.studentId}>
-                {r.name}: <code>{r.answer}</code>
-                {r.correct ? ' — верно' : ' — неверно'}
-              </li>
-            ))}
-          </ul>
-        </section>
+    <>
+      {phase === 'auth' && (
+        <form onSubmit={handleAuth}>
+          <h1>{HOST.title}</h1>
+          {authError && <p className="error">{authError}</p>}
+          <input
+            type="password"
+            value={tokenInput}
+            onChange={handleTokenChange}
+            placeholder={HOST.tokenHint}
+          />
+          <button type="submit">{HOST.loginBtn}</button>
+        </form>
       )}
-
-      <form onSubmit={handleStart}>
-        <select
-          value={selectedId}
-          onChange={e => setSelectedId(e.target.value)}
-        >
-          {questions.map(q => (
-            <option key={q.id} value={q.id}>{q.id}</option>
-          ))}
-        </select>
-        <input
-          type="number"
-          value={timeoutSec}
-          min={10}
-          max={300}
-          onChange={e => setTimeoutSec(Number(e.target.value))}
-        />
-        <button type="submit">Запустить вопрос</button>
-      </form>
-
-      <Scoreboard scores={scores} />
-    </div>
+      {phase === 'running' && (
+        <div>
+          <h1>{HOST.questionPrefix + activeId}</h1>
+          <p>{HOST.answeredPrefix + String(answeredCount) + HOST.separator + String(studentCount)}</p>
+          <button type="button" onClick={handleEnd}>{HOST.endRound}</button>
+        </div>
+      )}
+      {(phase === 'ready' || phase === 'ended') && (
+        <div>
+          <h1>{HOST.panelTitle}</h1>
+          <p>{HOST.studentsPrefix + String(studentCount)}</p>
+          {phase === 'ended' && results.length > 0 && (
+            <section>
+              <h2>{HOST.roundResults}</h2>
+              <ul>{resultItems}</ul>
+            </section>
+          )}
+          <form onSubmit={handleStart}>
+            <select value={selectedId} onChange={handleSelectChange}>
+              {questionOptions}
+            </select>
+            <input
+              type="number"
+              value={timeoutSec}
+              min={10}
+              max={300}
+              onChange={handleTimeoutChange}
+            />
+            <button type="submit">{HOST.startQuestion}</button>
+          </form>
+          <Scoreboard scores={scores} />
+        </div>
+      )}
+    </>
   );
 }

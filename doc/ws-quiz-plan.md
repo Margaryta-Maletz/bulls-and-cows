@@ -326,13 +326,13 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 - [x] Применить в `PresentPage` и `JoinPage` вместо `<pre><code>`
 
 #### 2.6 HostPage: список ответов + override_score (~20 мин)
-- [ ] После `round_results` показывать таблицу: студент | ответ | авто-оценка (✓/✗)
-- [ ] Кнопки `+` / `−` у каждого ответа → `{ type: 'override_score', studentId, correct: boolean }`
+- [x] После `round_results` показывать таблицу: студент | ответ | авто-оценка (✓/✗)
+- [x] Кнопки `+` / `−` у каждого ответа → `{ type: 'override_score', studentId, correct: boolean }`
 
 #### 2.7 Scoreboard: живое обновление (~10 мин)
-- [ ] `HostPage`: `scoreboard_update` обновляет таблицу в реальном времени
-- [ ] `JoinPage`: `leaderboard` приходит после раунда, таблица видна в фазе `result`
-- [ ] Убедиться что `Scoreboard` корректно ре-рендерится при смене `scores[]`
+- [x] `HostPage`: `scoreboard_update` обновляет таблицу в реальном времени
+- [x] `JoinPage`: `leaderboard` приходит после раунда, таблица видна в фазе `result`
+- [x] Убедиться что `Scoreboard` корректно ре-рендерится при смене `scores[]`
 
 #### 2.8 Блокировка повторной отправки (~10 мин)
 - [ ] После `answer_received`: кнопка отправки и инпут `disabled`, фаза `'answered'`
