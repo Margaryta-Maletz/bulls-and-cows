@@ -1,0 +1,17 @@
+[
+  {
+    "id": "w09-01",
+    "code": "console.log(1 + '2');",
+    "answers": ["12"]
+  },
+  {
+    "id": "w09-02",
+    "code": "console.log(typeof null);",
+    "answers": ["object"]
+  },
+  {
+    "id": "w09-03",
+    "code": "console.log([1, 2, 3].length);",
+    "answers": ["3"]
+  }
+]
