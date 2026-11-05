@@ -360,8 +360,8 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 - [x] Общий контейнер страниц: max-width, padding
 
 #### 3.2 Timer: CSS transition (~15 мин)
-- [ ] Заменить `<progress>` на `<div>` с `width: X%` и `transition: width 0.5s linear`
-- [ ] Цвет по остатку: >50% зелёный, 20–50% жёлтый, <20% красный
+- [x] Заменить `<progress>` на `<div>` с `width: X%` и `transition: width 0.5s linear`
+- [x] Цвет по остатку: >50% зелёный, 20–50% жёлтый, <20% красный
 
 #### 3.3 Chat компонент (~20 мин)
 - [ ] `client/src/components/Chat.tsx`: принимает `messages[]` + `onSend`
