@@ -4,8 +4,11 @@ import type {
   ClientToServerMsg,
   Question,
   ServerToHostMsg,
+  ServerToPresentMsg,
   ServerToStudentMsg,
 } from '@ws-quiz/shared';
+
+type AnyServerMsg = ServerToStudentMsg | ServerToHostMsg | ServerToPresentMsg;
 import type { GameSession } from './session.js';
 import { normalize } from './normalizer.js';
 
@@ -22,14 +25,14 @@ interface HandlerCtx {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function send(ws: WebSocket, msg: ServerToStudentMsg | ServerToHostMsg): void {
+function send(ws: WebSocket, msg: AnyServerMsg): void {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
 }
 
 function broadcastRole(
   connections: Map<WebSocket, ConnectionInfo>,
   roles: ConnectionInfo['role'][],
-  msg: ServerToStudentMsg | ServerToHostMsg,
+  msg: AnyServerMsg,
 ): void {
   for (const [ws, info] of connections) {
     if (roles.includes(info.role)) send(ws, msg);
@@ -117,7 +120,9 @@ function onStartQuestion(
   const { session, connections, questions } = ctx;
   const q = questions.get(msg.questionId);
   if (!q) return;
-  session.startQuestion(msg.questionId, msg.timeoutSec);
+  session.startQuestion(msg.questionId, msg.timeoutSec, (remaining) => {
+    broadcastRole(connections, ['present'], { type: 'timer_tick', remaining });
+  });
   broadcastRole(connections, ['student', 'present'], {
     type: 'question_started',
     questionId: q.id,
@@ -150,6 +155,11 @@ function onSubmitAnswer(
   send(ws, { type: 'answer_received' });
   const host = hostWs(connections);
   if (host) send(host, { type: 'student_answered', studentId: info.studentId });
+  broadcastRole(connections, ['present'], {
+    type: 'answer_count',
+    count: session.answerCount(),
+    total: session.students.size,
+  });
 }
 
 function onEndQuestion(
@@ -176,6 +186,11 @@ function onEndQuestion(
       });
     }
   }
+  broadcastRole(connections, ['present'], {
+    type: 'question_ended',
+    questionId: activeQ?.id ?? '',
+    correctAnswer,
+  });
   const scores = session.scoreboard();
   broadcastRole(connections, ['student', 'present'], { type: 'leaderboard', scores });
   send(ws, { type: 'scoreboard_update', scores });

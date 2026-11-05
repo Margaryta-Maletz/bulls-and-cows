@@ -27,6 +27,7 @@ export class GameSession {
   private readonly byToken = new Map<string, string>(); // reconnectToken → studentId
   private readonly byName  = new Map<string, string>(); // name → studentId
   private answers          = new Map<string, AnswerRecord>(); // studentId → answer
+  private tickTimer: ReturnType<typeof setInterval> | null = null;
 
   joinStudent(
     ws: WebSocket,
@@ -52,9 +53,24 @@ export class GameSession {
     return studentId;
   }
 
-  startQuestion(questionId: string, timeoutSec: number): void {
+  startQuestion(
+    questionId: string,
+    timeoutSec: number,
+    onTick: (remaining: number) => void,
+  ): void {
+    this.clearTimer();
     this.activeQuestion = { id: questionId, startedAt: Date.now(), timeoutSec };
     this.answers = new Map();
+    let remaining = timeoutSec;
+    this.tickTimer = setInterval(() => {
+      remaining -= 1;
+      onTick(remaining);
+      if (remaining <= 0) this.clearTimer();
+    }, 1000);
+  }
+
+  answerCount(): number {
+    return this.answers.size;
   }
 
   submitAnswer(
@@ -70,6 +86,7 @@ export class GameSession {
   }
 
   endQuestion(): StudentRoundResult[] {
+    this.clearTimer();
     const results: StudentRoundResult[] = [];
     for (const [studentId, { answer, correct }] of this.answers) {
       const record = this.students.get(studentId);
@@ -79,6 +96,13 @@ export class GameSession {
     }
     this.activeQuestion = null;
     return results;
+  }
+
+  private clearTimer(): void {
+    if (this.tickTimer !== null) {
+      clearInterval(this.tickTimer);
+      this.tickTimer = null;
+    }
   }
 
   scoreboard(): Score[] {

@@ -304,9 +304,9 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 - [x] Убедиться что `question_started` уже содержит `timeoutSec` и `startedAt`
 
 #### 2.2 Server: таймер и broadcast для Present (~20 мин)
-- [ ] В `session.ts`: запускать `setInterval` при `startQuestion`, рассылать `timer_tick` каждую секунду present-клиентам
-- [ ] В `handlers.ts`: при `submit_answer` — broadcast `answer_count` present-клиентам
-- [ ] При `endQuestion` — broadcast `question_ended` с правильным ответом
+- [x] В `session.ts`: запускать `setInterval` при `startQuestion`, рассылать `timer_tick` каждую секунду present-клиентам
+- [x] В `handlers.ts`: при `submit_answer` — broadcast `answer_count` present-клиентам
+- [x] При `endQuestion` — broadcast `question_ended` с правильным ответом
 
 #### 2.3 Timer компонент (~15 мин)
 - [ ] `client/src/components/Timer.tsx`: принимает `startedAt` и `timeoutSec`
