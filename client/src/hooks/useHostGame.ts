@@ -36,6 +36,7 @@ export interface HostGameApi {
   chatStudentId: string;
   unreadCount: number;
   status: 'connecting' | 'open' | 'closed';
+  reconnected: boolean;
   handleAuth: (e: FormSubmit) => void;
   handleStart: (e: FormSubmit) => void;
   handleEnd: () => void;
@@ -49,7 +50,7 @@ export interface HostGameApi {
 }
 
 export function useHostGame(): HostGameApi {
-  const { send, lastMessage, status } = useSocket<ServerToHostMsg>(wsUrl());
+  const { send, lastMessage, status, reconnected } = useSocket<ServerToHostMsg>(wsUrl());
 
   const [phase, setPhase]               = useState<Phase>('auth');
   const [tokenInput, setTokenInput]     = useState('');
@@ -176,7 +177,7 @@ export function useHostGame(): HostGameApi {
     phase, tokenInput, authError, questionFiles, questionFile,
     questions, selectedId, activeId, timeoutSec,
     students, studentCount, answeredCount, results, scores,
-    hostChats, chatStudentId, unreadCount, status,
+    hostChats, chatStudentId, unreadCount, status, reconnected,
     handleAuth, handleStart, handleEnd,
     handleTokenChange, handleSelectChange, handleTimeoutChange, handleFileChange,
     handleOverride, handleChatStudentChange, handleHostChatSend,

@@ -1,5 +1,6 @@
 export const LABELS = {
-  reconnecting:  'Переподключение...',
+  reconnecting:     'Переподключение...',
+  toastReconnected: 'Подключено',
   hostName:      'Ведущий',
   gameTitle:     'Войти в игру',
   nickname:      'Никнейм',

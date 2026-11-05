@@ -3,8 +3,9 @@ import Chat from '../components/Chat.tsx';
 import { useJoinGame } from '../hooks/useJoinGame.ts';
 import { LABELS } from '../labels.ts';
 
-const reconnecting  = LABELS.reconnecting;
-const gameTitle     = LABELS.gameTitle;
+const reconnecting      = LABELS.reconnecting;
+const toastMsg          = LABELS.toastReconnected;
+const gameTitle         = LABELS.gameTitle;
 const nickname      = LABELS.nickname;
 const joinBtn       = LABELS.joinBtn;
 const waiting       = LABELS.waiting;
@@ -21,11 +22,11 @@ export default function JoinPage() {
 
   const phase       = game.phase;
   const error       = game.error;
-  const question    = game.question;
   const submitting  = game.isSubmitting;
   const showBonus   = game.showBonus;
   const msgs        = game.chatMsgs;
   const hideBonus   = game.hideBonus;
+  const rejoined    = game.reconnected;
   const nick        = game.nameInput;
   const reply       = game.answer;
   const onJoin      = game.handleJoin;
@@ -36,11 +37,11 @@ export default function JoinPage() {
 
   const isJoin      = phase === 'join';
   const isWaiting   = phase === 'waiting';
-  const isAnswering = phase === 'answering' && question !== null;
+  const snippet     = game.questionCode;
+  const isAnswering = phase === 'answering' && snippet !== '';
   const isAnswered  = phase === 'answered';
 
-  const snippet  = question !== null ? question.code : '';
-  const errEl    = error !== '' ? <p className="error">{error}</p> : null;
+  const errEl    = error !== '' && <p className="error">{error}</p>;
   const msgEl    = <Chat messages={msgs} onSend={onSendMsg} />;
   const taskEl   = <CodeBlock>{snippet}</CodeBlock>;
   const nickEl   = <input value={nick} onChange={onNickType} placeholder={nickname} />;
@@ -64,6 +65,7 @@ export default function JoinPage() {
   return (
     <>
       {showBonus && <div className="bonus-anim" onAnimationEnd={hideBonus}>+1</div>}
+      {rejoined && <div className="toast">{toastMsg}</div>}
       {isJoin && f0}
       {isWaiting && (
         <div>

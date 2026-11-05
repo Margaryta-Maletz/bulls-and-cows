@@ -1,9 +1,10 @@
 import Scoreboard from '../components/Scoreboard.tsx';
 import Chat from '../components/Chat.tsx';
 import { useHostGame } from '../hooks/useHostGame.ts';
-import { HOST } from '../labels.ts';
+import { HOST, LABELS } from '../labels.ts';
 
 const hReconnecting   = HOST.reconnecting;
+const hToastMsg       = LABELS.toastReconnected;
 const hTitle          = HOST.title;
 const hTokenHint      = HOST.tokenHint;
 const hLoginBtn       = HOST.loginBtn;
@@ -48,6 +49,7 @@ export default function HostPage() {
   const hostChats       = g.hostChats;
   const chatStudentId   = g.chatStudentId;
   const unreadCount     = g.unreadCount;
+  const rejoined        = g.reconnected;
 
   const handleAuth              = g.handleAuth;
   const handleStart             = g.handleStart;
@@ -155,6 +157,7 @@ export default function HostPage() {
 
   return (
     <>
+      {rejoined && <div className="toast">{hToastMsg}</div>}
       {authBlock}
       {runningBlock}
       {panelBlock}

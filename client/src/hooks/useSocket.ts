@@ -8,13 +8,17 @@ export interface UseSocketResult<TIn> {
   send: (msg: unknown) => void;
   lastMessage: TIn | null;
   status: SocketStatus;
+  reconnected: boolean;
 }
 
 export function useSocket<TIn>(url: string): UseSocketResult<TIn> {
   const [lastMessage, setLastMessage] = useState<TIn | null>(null);
   const [status, setStatus]           = useState<SocketStatus>('connecting');
+  const [reconnected, setReconnected] = useState(false);
 
-  const wsRef = useRef<WebSocket | null>(null);
+  const wsRef           = useRef<WebSocket | null>(null);
+  const everClosed      = useRef(false);
+  const toastTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const lifecycle = { disposed: false };
@@ -29,7 +33,14 @@ export function useSocket<TIn>(url: string): UseSocketResult<TIn> {
       wsRef.current = ws;
       setStatus('connecting');
 
-      ws.onopen = () => setStatus('open');
+      ws.onopen = () => {
+        setStatus('open');
+        if (everClosed.current) {
+          setReconnected(true);
+          if (toastTimer.current) clearTimeout(toastTimer.current);
+          toastTimer.current = setTimeout(() => { setReconnected(false); }, 2000);
+        }
+      };
 
       ws.onmessage = (ev: MessageEvent<string>) => {
         try {
@@ -40,6 +51,7 @@ export function useSocket<TIn>(url: string): UseSocketResult<TIn> {
       };
 
       ws.onclose = () => {
+        everClosed.current = true;
         setStatus('closed');
         if (!lifecycle.disposed) {
           reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
@@ -53,6 +65,7 @@ export function useSocket<TIn>(url: string): UseSocketResult<TIn> {
     return () => {
       lifecycle.disposed = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
       socket?.close();
       if (wsRef.current === socket) wsRef.current = null;
     };
@@ -64,7 +77,7 @@ export function useSocket<TIn>(url: string): UseSocketResult<TIn> {
     }
   }, []);
 
-  return { send, lastMessage, status };
+  return { send, lastMessage, status, reconnected };
 }
 
 /** WebSocket URL: env в проде, автоопределение через proxy в dev */

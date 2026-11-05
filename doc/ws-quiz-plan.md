@@ -380,14 +380,14 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 - [x] Индикатор непрочитанных: счётчик новых сообщений
 
 #### 3.6 Анимация +N очков у студента (~15 мин)
-- [ ] После `round_result` с `correct: true`: показать `+1` анимацией
+- [x] После `round_result` с `correct: true`: показать `+1` анимацией
 - [ ] CSS `@keyframes`: fade-in → slide-up → fade-out (~2 с)
 - [ ] Реализовать через `useState<boolean>` + `onAnimationEnd` → сброс
 
 #### 3.7 Reconnect toast (~15 мин)
-- [ ] При переходе `closed → open` в `useSocket`: показать toast «Reconnected»
-- [ ] Toast: фиксированная позиция, появляется на 2 с затем исчезает
-- [ ] CSS: `position: fixed; bottom: 16px` + анимация появления
+- [x] При переходе `closed → open` в `useSocket`: показать toast «Reconnected»
+- [x] Toast: фиксированная позиция, появляется на 2 с затем исчезает
+- [x] CSS: `position: fixed; bottom: 16px` + анимация появления
 
 #### 3.8 Адаптив /join (~25 мин)
 - [ ] Input, button: `min-height: 44px` (touch target)

@@ -128,12 +128,14 @@ export interface JoinGameApi {
   phase: Phase;
   error: string;
   question: ActiveQuestion | null;
+  questionCode: string;
   isSubmitting: boolean;
   chatMsgs: ChatMsg[];
   showBonus: boolean;
   nameInput: string;
   answer: string;
   status: 'connecting' | 'open' | 'closed';
+  reconnected: boolean;
   handleJoin: (e: FormSubmit) => void;
   handleAnswer: (e: FormSubmit) => void;
   handleNameChange: (e: InputChange) => void;
@@ -143,7 +145,7 @@ export interface JoinGameApi {
 }
 
 export function useJoinGame(): JoinGameApi {
-  const { send, lastMessage, status } = useSocket<ServerToStudentMsg>(wsUrl());
+  const { send, lastMessage, status, reconnected } = useSocket<ServerToStudentMsg>(wsUrl());
 
   const [game, dispatch]            = useReducer(gameReducer, INIT);
   const [nameInput, setNameInput]   = useState('');
@@ -199,8 +201,9 @@ export function useJoinGame(): JoinGameApi {
 
   const { phase, error, question, isSubmitting, chatMsgs, showBonus } = game;
   return {
-    phase, error, question, isSubmitting, chatMsgs, showBonus,
-    nameInput, answer, status,
+    phase, error, question, questionCode: question !== null ? question.code : '',
+    isSubmitting, chatMsgs, showBonus,
+    nameInput, answer, status, reconnected,
     handleJoin, handleAnswer, handleNameChange, handleAnswerChange, handleChatSend, hideBonus,
   };
 }
