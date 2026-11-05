@@ -300,8 +300,8 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 ### Phase 2 — Полный игровой поток (~3–4 ч)
 
 #### 2.1 Shared types: present-события (~10 мин)
-- [ ] Добавить `timer_tick { remaining: number }`, `answer_count { count: number }`, `question_ended { correctAnswer: string }` в `ServerToPresentMsg`
-- [ ] Убедиться что `question_started` уже содержит `timeoutSec` и `startedAt`
+- [x] Добавить `timer_tick { remaining: number }`, `answer_count { count: number }`, `question_ended { correctAnswer: string }` в `ServerToPresentMsg`
+- [x] Убедиться что `question_started` уже содержит `timeoutSec` и `startedAt`
 
 #### 2.2 Server: таймер и broadcast для Present (~20 мин)
 - [ ] В `session.ts`: запускать `setInterval` при `startQuestion`, рассылать `timer_tick` каждую секунду present-клиентам

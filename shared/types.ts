@@ -199,6 +199,7 @@ export interface AnswerCountMsg {
 export interface QuestionEndedMsg {
   type: 'question_ended';
   questionId: string;
+  correctAnswer: string;
 }
 
 export type ServerToPresentMsg =
