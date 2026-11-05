@@ -13,6 +13,11 @@ export const LABELS = {
   totalPoints:   'Всего очков: ',
 } as const;
 
+export const CHAT = {
+  placeholder: 'Сообщение...',
+  sendBtn:     'Отправить',
+} as const;
+
 export const HOST = {
   reconnecting:    'Переподключение...',
   title:           'Ведущий',

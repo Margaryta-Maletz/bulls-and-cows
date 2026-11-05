@@ -364,9 +364,9 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 - [x] Цвет по остатку: >50% зелёный, 20–50% жёлтый, <20% красный
 
 #### 3.3 Chat компонент (~20 мин)
-- [ ] `client/src/components/Chat.tsx`: принимает `messages[]` + `onSend`
-- [ ] Рендер через JSX (React экранирует автоматически — нет XSS, нет `dangerouslySetInnerHTML`)
-- [ ] Автоскролл к последнему сообщению через `useRef`
+- [x] `client/src/components/Chat.tsx`: принимает `messages[]` + `onSend`
+- [x] Рендер через JSX (React экранирует автоматически — нет XSS, нет `dangerouslySetInnerHTML`)
+- [x] Автоскролл к последнему сообщению через `useRef`
 - [x] `CodeBlock`: highlight.js из cdnjs — выполнено в Phase 2
 
 #### 3.4 Chat: JoinPage интеграция (~20 мин)
