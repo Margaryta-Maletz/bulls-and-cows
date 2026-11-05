@@ -278,6 +278,51 @@ li {
   flex-wrap: wrap;
 }
 
+/* ── Present view ─────────────────────────────────────────────── */
+
+.present-code pre {
+  font-size: 1.3rem;
+  line-height: 1.7;
+  max-width: none;
+  padding: 32px 40px;
+}
+
+.present-counter {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-h);
+  margin-top: 20px;
+}
+
+.present-answer pre {
+  font-size: 1.3rem;
+  line-height: 1.7;
+  max-width: none;
+  padding: 32px 40px;
+  border-color: var(--accent);
+}
+
+.present-answer pre code {
+  color: var(--accent);
+}
+
+/* ── Mobile ───────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 28px;
+    margin: 16px 0;
+  }
+
+  #root > * {
+    padding: 16px 12px 32px;
+  }
+
+  .chat-messages {
+    height: 160px;
+  }
+}
+
 /* ── Bonus animation ──────────────────────────────────────────── */
 
 .bonus-anim {

@@ -1,67 +1,53 @@
-import { useState, useEffect } from 'react';
-import type { ServerToPresentMsg } from '@ws-quiz/shared';
-import { useSocket, wsUrl } from '../hooks/useSocket.ts';
 import Timer from '../components/Timer.tsx';
 import CodeBlock from '../components/CodeBlock.tsx';
+import { usePresentGame } from '../hooks/usePresentGame.ts';
+import { PRESENT } from '../labels.ts';
 
-type Phase = 'idle' | 'active' | 'ended';
-
-interface ActiveQuestion {
-  code: string;
-  startedAt: number;
-  timeoutSec: number;
-}
+const pReconnecting = PRESENT.reconnecting;
+const pWaiting      = PRESENT.waiting;
+const pAnswered     = PRESENT.answered;
+const pSeparator    = PRESENT.separator;
+const pRightAnswer  = PRESENT.rightAnswer;
 
 export default function PresentPage() {
-  const { lastMessage, status } = useSocket<ServerToPresentMsg>(wsUrl('present'));
+  const g = usePresentGame();
 
-  const [phase, setPhase]               = useState<Phase>('idle');
-  const [question, setQuestion]         = useState<ActiveQuestion | null>(null);
-  const [answerCount, setAnswerCount]   = useState(0);
-  const [totalCount, setTotalCount]     = useState(0);
-  const [correctAnswer, setCorrectAnswer] = useState('');
-
-  useEffect(() => {
-    if (!lastMessage) return;
-    switch (lastMessage.type) {
-      case 'question_started':
-        // oxlint-disable-next-line react/set-state-in-effect -- WebSocket messages drive this component's state.
-        setQuestion({ code: lastMessage.code, startedAt: lastMessage.startedAt, timeoutSec: lastMessage.timeoutSec });
-        setAnswerCount(0);
-        setTotalCount(0);
-        setPhase('active');
-        break;
-      case 'answer_count':
-        setAnswerCount(lastMessage.count);
-        setTotalCount(lastMessage.total);
-        break;
-      case 'question_ended':
-        setCorrectAnswer(lastMessage.correctAnswer);
-        setPhase('ended');
-        break;
-    }
-  }, [lastMessage]);
-
-  if (status === 'closed') {
-    return <p>{'Переподключение...'}</p>;
+  if (g.status === 'closed') {
+    return <p>{pReconnecting}</p>;
   }
+
+  const phase         = g.phase;
+  const questionSrc   = g.questionSrc;
+  const startedAt     = g.startedAt;
+  const timeoutSec    = g.timeoutSec;
+  const answerCount   = g.answerCount;
+  const totalCount    = g.totalCount;
+  const correctAnswer = g.correctAnswer;
+
+  const isIdle   = phase === 'idle';
+  const isActive = phase === 'active' && questionSrc !== '';
+  const isEnded  = phase === 'ended';
+
+  const counterText = pAnswered + String(answerCount) + pSeparator + String(totalCount);
 
   return (
     <>
-      {phase === 'idle' && (
-        <p>{'Ожидаем вопрос...'}</p>
-      )}
-      {phase === 'active' && question !== null && (
+      {isIdle && <p>{pWaiting}</p>}
+      {isActive && (
         <div>
-          <Timer startedAt={question.startedAt} timeoutSec={question.timeoutSec} />
-          <CodeBlock>{question.code}</CodeBlock>
-          <p>{'Ответили: ' + String(answerCount) + ' / ' + String(totalCount)}</p>
+          <Timer startedAt={startedAt} timeoutSec={timeoutSec} />
+          <div className="present-code">
+            <CodeBlock>{questionSrc}</CodeBlock>
+          </div>
+          <p className="present-counter">{counterText}</p>
         </div>
       )}
-      {phase === 'ended' && (
+      {isEnded && (
         <div>
-          <p>{'Правильный ответ:'}</p>
-          <CodeBlock>{correctAnswer}</CodeBlock>
+          <p>{pRightAnswer}</p>
+          <div className="present-answer">
+            <CodeBlock>{correctAnswer}</CodeBlock>
+          </div>
         </div>
       )}
     </>

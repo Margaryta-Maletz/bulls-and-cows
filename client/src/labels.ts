@@ -25,6 +25,14 @@ export const CHAT = {
   sendBtn:     'Отправить',
 } as const;
 
+export const PRESENT = {
+  reconnecting: 'Переподключение...',
+  waiting:      'Ожидаем вопрос...',
+  answered:     'Ответили: ',
+  separator:    ' / ',
+  rightAnswer:  'Правильный ответ:',
+} as const;
+
 export const HOST = {
   reconnecting:    'Переподключение...',
   title:           'Ведущий',
