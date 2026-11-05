@@ -1,176 +1,163 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { Question, Score, ServerToHostMsg, StudentRoundResult } from '@ws-quiz/shared';
-import { useSocket, wsUrl } from '../hooks/useSocket.ts';
 import Scoreboard from '../components/Scoreboard.tsx';
+import Chat from '../components/Chat.tsx';
+import { useHostGame } from '../hooks/useHostGame.ts';
 import { HOST } from '../labels.ts';
 
-type Phase       = 'auth' | 'ready' | 'running' | 'ended';
-type FormSubmit  = { preventDefault(): void };
-type InputChange = { currentTarget: { value: string } };
+const hReconnecting   = HOST.reconnecting;
+const hTitle          = HOST.title;
+const hTokenHint      = HOST.tokenHint;
+const hLoginBtn       = HOST.loginBtn;
+const hQuestionPrefix = HOST.questionPrefix;
+const hAnsweredPrefix = HOST.answeredPrefix;
+const hSeparator      = HOST.separator;
+const hEndRound       = HOST.endRound;
+const hPanelTitle     = HOST.panelTitle;
+const hStudentsPrefix = HOST.studentsPrefix;
+const hRoundResults   = HOST.roundResults;
+const hResultCorrect  = HOST.resultCorrect;
+const hResultWrong    = HOST.resultWrong;
+const hAddPoint       = HOST.addPoint;
+const hRemovePoint    = HOST.removePoint;
+const hStartQuestion  = HOST.startQuestion;
+const hFileLabel      = HOST.fileLabel;
+const hChatTitle      = HOST.chatTitle;
+const hChatSelectHint = HOST.chatSelectHint;
+const hUnreadBadge    = HOST.unreadBadge;
 
 export default function HostPage() {
-  const { send, lastMessage, status } = useSocket<ServerToHostMsg>(wsUrl());
+  const g = useHostGame();
 
-  const [phase, setPhase]               = useState<Phase>('auth');
-  const [tokenInput, setTokenInput]     = useState('');
-  const [authError, setAuthError]       = useState('');
-  const [questionFiles, setQuestionFiles] = useState<string[]>([]);
-  const [questionFile, setQuestionFile] = useState('');
-  const [questions, setQuestions]       = useState<Question[]>([]);
-  const [selectedId, setSelectedId]     = useState('');
-  const [activeId, setActiveId]         = useState('');
-  const [timeoutSec, setTimeoutSec]     = useState(60);
-  const [studentCount, setStudentCount] = useState(0);
-  const [answeredCount, setAnsweredCount] = useState(0);
-  const [results, setResults]           = useState<StudentRoundResult[]>([]);
-  const [scores, setScores]             = useState<Score[]>([]);
+  if (g.status === 'closed') {
+    return <p>{hReconnecting}</p>;
+  }
 
-  const loadFile = useCallback((filename: string) => {
-    setQuestionFile(filename);
-    fetch('/questions/' + filename)
-      .then(r => r.json() as Promise<Question[]>)
-      .then(qs => {
-        setQuestions(qs);
-        if (qs.length > 0) setSelectedId(qs[0].id);
-      })
-      .catch(() => { /* no questions */ });
-  }, []);
+  const phase           = g.phase;
+  const tokenInput      = g.tokenInput;
+  const authError       = g.authError;
+  const questionFiles   = g.questionFiles;
+  const questionFile    = g.questionFile;
+  const questions       = g.questions;
+  const selectedId      = g.selectedId;
+  const activeId        = g.activeId;
+  const timeoutSec      = g.timeoutSec;
+  const students        = g.students;
+  const studentCount    = g.studentCount;
+  const answeredCount   = g.answeredCount;
+  const results         = g.results;
+  const scores          = g.scores;
+  const hostChats       = g.hostChats;
+  const chatStudentId   = g.chatStudentId;
+  const unreadCount     = g.unreadCount;
 
-  useEffect(() => {
-    if (!lastMessage) return;
-    switch (lastMessage.type) {
-      case 'auth_success':
-        // oxlint-disable-next-line react/set-state-in-effect -- WebSocket messages drive this component's state.
-        setPhase('ready');
-        setAuthError('');
-        fetch('/questions/index.json')
-          .then(r => r.json() as Promise<string[]>)
-          .then(files => {
-            setQuestionFiles(files);
-            loadFile(files[0] ?? 'week-09.json');
-          })
-          .catch(() => { loadFile('week-09.json'); });
-        break;
-      case 'auth_failed':
-        setTokenInput('');
-        setAuthError(lastMessage.reason);
-        break;
-      case 'student_joined':
-        setStudentCount(n => n + 1);
-        break;
-      case 'student_answered':
-        setAnsweredCount(n => n + 1);
-        break;
-      case 'round_results':
-        setResults(lastMessage.results);
-        setPhase('ended');
-        break;
-      case 'scoreboard_update':
-        setScores(lastMessage.scores);
-        break;
-    }
-  }, [lastMessage, loadFile]);
+  const handleAuth              = g.handleAuth;
+  const handleStart             = g.handleStart;
+  const handleEnd               = g.handleEnd;
+  const handleTokenChange       = g.handleTokenChange;
+  const handleSelectChange      = g.handleSelectChange;
+  const handleTimeoutChange     = g.handleTimeoutChange;
+  const handleFileChange        = g.handleFileChange;
+  const handleOverride          = g.handleOverride;
+  const handleChatStudentChange = g.handleChatStudentChange;
+  const handleHostChatSend      = g.handleHostChatSend;
 
-  const handleAuth = useCallback((e: FormSubmit) => {
-    e.preventDefault();
-    send({ type: 'host_auth', token: tokenInput });
-  }, [tokenInput, send]);
+  const isAuth         = phase === 'auth';
+  const isRunning      = phase === 'running';
+  const isReadyOrEnded = phase === 'ready' || phase === 'ended';
+  const hasResults     = phase === 'ended' && results.length > 0;
 
-  const handleStart = useCallback((e: FormSubmit) => {
-    e.preventDefault();
-    if (!selectedId) return;
-    setActiveId(selectedId);
-    setAnsweredCount(0);
-    setResults([]);
-    send({ type: 'start_question', questionId: selectedId, timeoutSec });
-    setPhase('running');
-  }, [selectedId, timeoutSec, send]);
+  // Pre-compute form elements
+  const tokenInputEl   = <input type="password" value={tokenInput} onChange={handleTokenChange} placeholder={hTokenHint} />;
+  const timeoutInputEl = <input type="number" value={timeoutSec} min={10} max={300} onChange={handleTimeoutChange} />;
+  const scoreboardEl   = <Scoreboard scores={scores} />;
 
-  const handleEnd = useCallback(() => {
-    send({ type: 'end_question', questionId: activeId });
-  }, [activeId, send]);
+  const fileSelectEl = (
+    <select value={questionFile} onChange={handleFileChange}>
+      {questionFiles.map(f => <option key={f} value={f}>{f}</option>)}
+    </select>
+  );
 
-  const handleTokenChange    = useCallback((e: InputChange) => { setTokenInput(e.currentTarget.value); }, []);
-  const handleSelectChange   = useCallback((e: InputChange) => { setSelectedId(e.currentTarget.value); }, []);
-  const handleTimeoutChange  = useCallback((e: InputChange) => { setTimeoutSec(Number(e.currentTarget.value)); }, []);
-  const handleFileChange     = useCallback((e: InputChange) => { loadFile(e.currentTarget.value); }, [loadFile]);
-  const handleOverride       = useCallback((studentId: string, correct: boolean) => () => {
-    send({ type: 'override_score', studentId, correct });
-  }, [send]);
+  const questionSelectEl = (
+    <select value={selectedId} onChange={handleSelectChange}>
+      {questions.map(q => <option key={q.id} value={q.id}>{q.id}</option>)}
+    </select>
+  );
 
-  const fileOptions     = questionFiles.map(f => (
-    <option key={f} value={f}>{f}</option>
-  ));
-  const questionOptions = questions.map(q => (
-    <option key={q.id} value={q.id}>{q.id}</option>
-  ));
-  const resultItems     = results.map(r => (
+  const chatStudentSelectEl = (
+    <select value={chatStudentId} onChange={handleChatStudentChange}>
+      <option value="">{hChatSelectHint}</option>
+      {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+    </select>
+  );
+
+  // Pre-compute conditional elements
+  const authErrorEl = authError !== '' ? <p className="error">{authError}</p> : null;
+  const unreadEl    = unreadCount > 0 ? <span className="badge">{String(unreadCount) + ' ' + hUnreadBadge}</span> : null;
+
+  const currentChatMsgs = hostChats.filter(m => m.studentId === chatStudentId);
+  const chatEl = chatStudentId !== '' ? <Chat messages={currentChatMsgs} onSend={handleHostChatSend} /> : null;
+
+  const resultItems = results.map(r => (
     <li key={r.studentId}>
       {r.name}{': '}<code>{r.answer}</code>
-      {r.correct ? HOST.resultCorrect : HOST.resultWrong}
-      <button type="button" onClick={handleOverride(r.studentId, true)}>{HOST.addPoint}</button>
-      <button type="button" onClick={handleOverride(r.studentId, false)}>{HOST.removePoint}</button>
+      {r.correct ? hResultCorrect : hResultWrong}
+      <button type="button" onClick={handleOverride(r.studentId, true)}>{hAddPoint}</button>
+      <button type="button" onClick={handleOverride(r.studentId, false)}>{hRemovePoint}</button>
     </li>
   ));
 
-  if (status === 'closed') {
-    return <p>{HOST.reconnecting}</p>;
-  }
+  const resultsEl = hasResults ? (
+    <section>
+      <h2>{hRoundResults}</h2>
+      <ul>{resultItems}</ul>
+    </section>
+  ) : null;
+
+  // Pre-compute phase blocks
+  const authBlock = isAuth ? (
+    <form onSubmit={handleAuth}>
+      <h1>{hTitle}</h1>
+      {authErrorEl}
+      {tokenInputEl}
+      <button type="submit">{hLoginBtn}</button>
+    </form>
+  ) : null;
+
+  const runningBlock = isRunning ? (
+    <div>
+      <h1>{hQuestionPrefix + activeId}</h1>
+      <p>{hAnsweredPrefix + String(answeredCount) + hSeparator + String(studentCount)}</p>
+      <button type="button" onClick={handleEnd}>{hEndRound}</button>
+    </div>
+  ) : null;
+
+  const panelBlock = isReadyOrEnded ? (
+    <div>
+      <h1>{hPanelTitle}</h1>
+      <p>{hStudentsPrefix + String(studentCount)}</p>
+      {resultsEl}
+      <form onSubmit={handleStart}>
+        <label>
+          {hFileLabel}
+          {fileSelectEl}
+        </label>
+        {questionSelectEl}
+        {timeoutInputEl}
+        <button type="submit">{hStartQuestion}</button>
+      </form>
+      {scoreboardEl}
+      <section>
+        <h2>{hChatTitle}{unreadEl}</h2>
+        {chatStudentSelectEl}
+        {chatEl}
+      </section>
+    </div>
+  ) : null;
 
   return (
     <>
-      {phase === 'auth' && (
-        <form onSubmit={handleAuth}>
-          <h1>{HOST.title}</h1>
-          {authError && <p className="error">{authError}</p>}
-          <input
-            type="password"
-            value={tokenInput}
-            onChange={handleTokenChange}
-            placeholder={HOST.tokenHint}
-          />
-          <button type="submit">{HOST.loginBtn}</button>
-        </form>
-      )}
-      {phase === 'running' && (
-        <div>
-          <h1>{HOST.questionPrefix + activeId}</h1>
-          <p>{HOST.answeredPrefix + String(answeredCount) + HOST.separator + String(studentCount)}</p>
-          <button type="button" onClick={handleEnd}>{HOST.endRound}</button>
-        </div>
-      )}
-      {(phase === 'ready' || phase === 'ended') && (
-        <div>
-          <h1>{HOST.panelTitle}</h1>
-          <p>{HOST.studentsPrefix + String(studentCount)}</p>
-          {phase === 'ended' && results.length > 0 && (
-            <section>
-              <h2>{HOST.roundResults}</h2>
-              <ul>{resultItems}</ul>
-            </section>
-          )}
-          <form onSubmit={handleStart}>
-            <label>
-              {HOST.fileLabel}
-              <select value={questionFile} onChange={handleFileChange}>
-                {fileOptions}
-              </select>
-            </label>
-            <select value={selectedId} onChange={handleSelectChange}>
-              {questionOptions}
-            </select>
-            <input
-              type="number"
-              value={timeoutSec}
-              min={10}
-              max={300}
-              onChange={handleTimeoutChange}
-            />
-            <button type="submit">{HOST.startQuestion}</button>
-          </form>
-          <Scoreboard scores={scores} />
-        </div>
-      )}
+      {authBlock}
+      {runningBlock}
+      {panelBlock}
     </>
   );
 }

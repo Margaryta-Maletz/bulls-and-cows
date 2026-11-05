@@ -1,5 +1,5 @@
 import { useReducer, useState, useEffect, useCallback } from 'react';
-import type { Score, ServerToStudentMsg } from '@ws-quiz/shared';
+import type { ServerToStudentMsg } from '@ws-quiz/shared';
 import { useSocket, wsUrl } from './useSocket.ts';
 import type { ChatMsg } from '../components/Chat.tsx';
 import { LABELS } from '../labels.ts';
@@ -7,25 +7,17 @@ import { LABELS } from '../labels.ts';
 type FormSubmit  = { preventDefault(): void };
 type InputChange = { currentTarget: { value: string } };
 
-export type Phase = 'join' | 'waiting' | 'answering' | 'answered' | 'result';
+export type Phase = 'join' | 'waiting' | 'answering' | 'answered';
 
 export interface ActiveQuestion {
   id: string;
   code: string;
 }
 
-export interface RoundResult {
-  correct: boolean;
-  correctAnswer: string;
-  totalPoints: number;
-}
-
 interface GameState {
   phase: Phase;
   error: string;
   question: ActiveQuestion | null;
-  result: RoundResult | null;
-  scores: Score[];
   isSubmitting: boolean;
   chatMsgs: ChatMsg[];
 }
@@ -33,14 +25,13 @@ interface GameState {
 type GameAction =
   | ServerToStudentMsg
   | { type: 'submit' }
-  | { type: 'chat_sent'; text: string; from: string };
+  | { type: 'chat_sent'; text: string; from: string }
+  | { type: 'answer_sent'; questionId: string; answer: string; from: string };
 
 const INIT: GameState = {
   phase: 'join',
   error: '',
   question: null,
-  result: null,
-  scores: [],
   isSubmitting: false,
   chatMsgs: [],
 };
@@ -60,24 +51,36 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         error: '',
         isSubmitting: false,
         question: { id: action.questionId, code: action.code },
-        result: null,
+        chatMsgs: [...state.chatMsgs, {
+          id: String(++msgSeq),
+          from: action.questionId,
+          text: action.code,
+          own: false,
+        }],
       };
     case 'answer_received':
       return { ...state, phase: 'answered' };
     case 'answer_rejected':
       return { ...state, isSubmitting: false, error: action.reason };
-    case 'round_result':
+    case 'round_result': {
+      const verdict = action.correct ? LABELS.correct : LABELS.incorrect;
+      const resultText = verdict
+        + ' ' + LABELS.chatRightAnswer + action.correctAnswer
+        + LABELS.chatTotalPoints + String(action.totalPoints) + LABELS.chatPoints;
       return {
         ...state,
-        phase: 'result',
-        result: {
-          correct: action.correct,
-          correctAnswer: action.correctAnswer,
-          totalPoints: action.totalPoints,
-        },
+        phase: 'waiting',
+        isSubmitting: false,
+        chatMsgs: [...state.chatMsgs, {
+          id: String(++msgSeq),
+          from: LABELS.chatSystem,
+          text: resultText,
+          own: false,
+        }],
       };
+    }
     case 'leaderboard':
-      return { ...state, scores: action.scores };
+      return state;
     case 'chat_from_host':
       return {
         ...state,
@@ -100,6 +103,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           own: true,
         }],
       };
+    case 'answer_sent':
+      return {
+        ...state,
+        chatMsgs: [...state.chatMsgs, {
+          id: String(++msgSeq),
+          from: action.from,
+          text: LABELS.chatMyAnswer + action.answer,
+          own: true,
+        }],
+      };
     default:
       return state;
   }
@@ -109,8 +122,6 @@ export interface JoinGameApi {
   phase: Phase;
   error: string;
   question: ActiveQuestion | null;
-  result: RoundResult | null;
-  scores: Score[];
   isSubmitting: boolean;
   chatMsgs: ChatMsg[];
   nameInput: string;
@@ -161,10 +172,12 @@ export function useJoinGame(): JoinGameApi {
 
   const handleAnswer = useCallback((e: FormSubmit) => {
     e.preventDefault();
-    if (!game.question || !answer.trim() || game.isSubmitting) return;
+    const trimmedAnswer = answer.trim();
+    if (!game.question || !trimmedAnswer || game.isSubmitting) return;
     dispatch({ type: 'submit' });
-    send({ type: 'submit_answer', questionId: game.question.id, answer: answer.trim() });
-  }, [game.question, game.isSubmitting, answer, send]);
+    dispatch({ type: 'answer_sent', questionId: game.question.id, answer: trimmedAnswer, from: studentName });
+    send({ type: 'submit_answer', questionId: game.question.id, answer: trimmedAnswer });
+  }, [game.question, game.isSubmitting, answer, studentName, send]);
 
   const handleNameChange   = useCallback((e: InputChange) => { setNameInput(e.currentTarget.value); }, []);
   const handleAnswerChange = useCallback((e: InputChange) => { setAnswer(e.currentTarget.value); }, []);
@@ -174,15 +187,10 @@ export function useJoinGame(): JoinGameApi {
     dispatch({ type: 'chat_sent', text, from: studentName });
   }, [send, studentName]);
 
+  const { phase, error, question, isSubmitting, chatMsgs } = game;
   return {
-    ...game,
-    nameInput,
-    answer,
-    status,
-    handleJoin,
-    handleAnswer,
-    handleNameChange,
-    handleAnswerChange,
-    handleChatSend,
+    phase, error, question, isSubmitting, chatMsgs,
+    nameInput, answer, status,
+    handleJoin, handleAnswer, handleNameChange, handleAnswerChange, handleChatSend,
   };
 }

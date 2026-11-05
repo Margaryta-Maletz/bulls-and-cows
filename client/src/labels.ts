@@ -12,6 +12,11 @@ export const LABELS = {
   incorrect:     'Неверно!',
   rightAnswer:   'Правильный ответ: ',
   totalPoints:   'Всего очков: ',
+  chatMyAnswer:     'Мой ответ: ',
+  chatRightAnswer:  'Правильный: ',
+  chatTotalPoints:  ' · Итого: ',
+  chatPoints:       ' очков',
+  chatSystem:       'Результат',
 } as const;
 
 export const CHAT = {
@@ -37,4 +42,8 @@ export const HOST = {
   removePoint:     '−1',
   startQuestion:   'Запустить вопрос',
   fileLabel:       'Файл: ',
+  chatTitle:       'Чат',
+  chatSelectHint:  'Выберите студента',
+  chatOwn:         'Вы',
+  unreadBadge:     'новых',
 } as const;
