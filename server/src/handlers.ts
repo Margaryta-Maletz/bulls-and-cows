@@ -7,6 +7,7 @@ import type {
   ServerToStudentMsg,
 } from '@ws-quiz/shared';
 import type { GameSession } from './session.js';
+import { normalize } from './normalizer.js';
 
 export interface ConnectionInfo {
   role: 'student' | 'host' | 'present' | null;
@@ -139,9 +140,8 @@ function onSubmitAnswer(
     return;
   }
   const q = questions.get(session.activeQuestion.id);
-  // Stub normalizer — будет заменён в шаге 1.6
-  const normalized = msg.answer.trim().toLowerCase();
-  const correctAnswers = (q?.answers ?? []).map((a) => a.trim().toLowerCase());
+  const normalized = normalize(msg.answer);
+  const correctAnswers = (q?.answers ?? []).map(normalize);
   const status = session.submitAnswer(info.studentId, normalized, correctAnswers);
   if (status === 'rejected') {
     send(ws, { type: 'answer_rejected', reason: 'already submitted' });
