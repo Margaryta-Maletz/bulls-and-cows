@@ -30,4 +30,5 @@ export const HOST = {
   addPoint:        '+1',
   removePoint:     '−1',
   startQuestion:   'Запустить вопрос',
+  fileLabel:       'Файл: ',
 } as const;

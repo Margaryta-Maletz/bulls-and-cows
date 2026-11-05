@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'node:http';
 import { join } from 'node:path';
+import { readdirSync } from 'node:fs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { GameSession } from './session.js';
 import { loadQuestions } from './questions.js';
@@ -19,6 +20,16 @@ const connections = new Map<WebSocket, ConnectionInfo>();
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
+});
+
+app.get('/questions/index.json', (_req, res) => {
+  const dir = join(__dirname, '..', '..', 'questions');
+  try {
+    const files = readdirSync(dir).filter(f => f.endsWith('.json') && f !== 'index.json');
+    res.json(files);
+  } catch {
+    res.json([]);
+  }
 });
 
 app.use('/questions', express.static(join(__dirname, '..', '..', 'questions')));

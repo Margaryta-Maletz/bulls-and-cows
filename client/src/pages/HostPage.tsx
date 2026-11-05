@@ -14,6 +14,8 @@ export default function HostPage() {
   const [phase, setPhase]               = useState<Phase>('auth');
   const [tokenInput, setTokenInput]     = useState('');
   const [authError, setAuthError]       = useState('');
+  const [questionFiles, setQuestionFiles] = useState<string[]>([]);
+  const [questionFile, setQuestionFile] = useState('');
   const [questions, setQuestions]       = useState<Question[]>([]);
   const [selectedId, setSelectedId]     = useState('');
   const [activeId, setActiveId]         = useState('');
@@ -23,6 +25,17 @@ export default function HostPage() {
   const [results, setResults]           = useState<StudentRoundResult[]>([]);
   const [scores, setScores]             = useState<Score[]>([]);
 
+  const loadFile = useCallback((filename: string) => {
+    setQuestionFile(filename);
+    fetch('/questions/' + filename)
+      .then(r => r.json() as Promise<Question[]>)
+      .then(qs => {
+        setQuestions(qs);
+        if (qs.length > 0) setSelectedId(qs[0].id);
+      })
+      .catch(() => { /* no questions */ });
+  }, []);
+
   useEffect(() => {
     if (!lastMessage) return;
     switch (lastMessage.type) {
@@ -30,13 +43,13 @@ export default function HostPage() {
         // oxlint-disable-next-line react/set-state-in-effect -- WebSocket messages drive this component's state.
         setPhase('ready');
         setAuthError('');
-        fetch('/questions/week-09.json')
-          .then(r => r.json() as Promise<Question[]>)
-          .then(qs => {
-            setQuestions(qs);
-            if (qs.length > 0) setSelectedId(qs[0].id);
+        fetch('/questions/index.json')
+          .then(r => r.json() as Promise<string[]>)
+          .then(files => {
+            setQuestionFiles(files);
+            loadFile(files[0] ?? 'week-09.json');
           })
-          .catch(() => { /* no questions available */ });
+          .catch(() => { loadFile('week-09.json'); });
         break;
       case 'auth_failed':
         setTokenInput('');
@@ -56,7 +69,7 @@ export default function HostPage() {
         setScores(lastMessage.scores);
         break;
     }
-  }, [lastMessage]);
+  }, [lastMessage, loadFile]);
 
   const handleAuth = useCallback((e: FormSubmit) => {
     e.preventDefault();
@@ -80,15 +93,18 @@ export default function HostPage() {
   const handleTokenChange    = useCallback((e: InputChange) => { setTokenInput(e.currentTarget.value); }, []);
   const handleSelectChange   = useCallback((e: InputChange) => { setSelectedId(e.currentTarget.value); }, []);
   const handleTimeoutChange  = useCallback((e: InputChange) => { setTimeoutSec(Number(e.currentTarget.value)); }, []);
+  const handleFileChange     = useCallback((e: InputChange) => { loadFile(e.currentTarget.value); }, [loadFile]);
   const handleOverride       = useCallback((studentId: string, correct: boolean) => () => {
     send({ type: 'override_score', studentId, correct });
   }, [send]);
 
+  const fileOptions     = questionFiles.map(f => (
+    <option key={f} value={f}>{f}</option>
+  ));
   const questionOptions = questions.map(q => (
     <option key={q.id} value={q.id}>{q.id}</option>
   ));
-
-  const resultItems = results.map(r => (
+  const resultItems     = results.map(r => (
     <li key={r.studentId}>
       {r.name}{': '}<code>{r.answer}</code>
       {r.correct ? HOST.resultCorrect : HOST.resultWrong}
@@ -134,6 +150,12 @@ export default function HostPage() {
             </section>
           )}
           <form onSubmit={handleStart}>
+            <label>
+              {HOST.fileLabel}
+              <select value={questionFile} onChange={handleFileChange}>
+                {fileOptions}
+              </select>
+            </label>
             <select value={selectedId} onChange={handleSelectChange}>
               {questionOptions}
             </select>
