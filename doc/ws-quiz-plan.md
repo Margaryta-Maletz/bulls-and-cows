@@ -314,12 +314,12 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 - [x] Рендерит прогресс-бар (`<progress value remaining max timeoutSec>`)
 
 #### 2.4 PresentPage (~20 мин)
-- [ ] `client/src/pages/PresentPage.tsx`: подключается через `wsUrl('present')`
-- [ ] Показывает код вопроса при `question_started`
-- [ ] `<Timer startedAt timeoutSec>` — полоса убывает
-- [ ] Счётчик из `answer_count`
-- [ ] Финальный экран при `question_ended` с правильным ответом
-- [ ] Маршрут `/present` в `App.tsx`
+- [x] `client/src/pages/PresentPage.tsx`: подключается через `wsUrl('present')`
+- [x] Показывает код вопроса при `question_started`
+- [x] `<Timer startedAt timeoutSec>` — полоса убывает
+- [x] Счётчик из `answer_count`
+- [x] Финальный экран при `question_ended` с правильным ответом
+- [x] Маршрут `/present` в `App.tsx`
 
 #### 2.5 CodeBlock компонент (~15 мин)
 - [ ] `client/src/components/CodeBlock.tsx`: обёртка над highlight.js (UMD с cdnjs, пинить версию)
