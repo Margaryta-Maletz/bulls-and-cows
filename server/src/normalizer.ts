@@ -11,7 +11,7 @@
  */
 export function normalize(raw: string): string {
   return raw
-    .replace(/\r\n|\r/g, '\n')
+    .replaceAll('\r\n', '\n').replaceAll('\r', '\n')
     .trim()
     .toLowerCase()
     .replace(/ {2,}/g, ' ')

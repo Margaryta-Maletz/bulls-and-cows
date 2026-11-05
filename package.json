@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev:server": "cd server && npx tsx watch src/index.ts",
-    "dev:client": "cd client && npm run dev"
+    "dev:client": "cd client && npm run dev",
+    "md-to-json": "npx tsx scripts/md-to-json.ts"
   }
 }
