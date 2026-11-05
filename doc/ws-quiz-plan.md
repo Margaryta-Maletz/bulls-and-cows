@@ -322,8 +322,8 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 - [x] Маршрут `/present` в `App.tsx`
 
 #### 2.5 CodeBlock компонент (~15 мин)
-- [ ] `client/src/components/CodeBlock.tsx`: обёртка над highlight.js (UMD с cdnjs, пинить версию)
-- [ ] Применить в `PresentPage` и `JoinPage` вместо `<pre><code>`
+- [x] `client/src/components/CodeBlock.tsx`: обёртка над highlight.js (UMD с cdnjs, пинить версию)
+- [x] Применить в `PresentPage` и `JoinPage` вместо `<pre><code>`
 
 #### 2.6 HostPage: список ответов + override_score (~20 мин)
 - [ ] После `round_results` показывать таблицу: студент | ответ | авто-оценка (✓/✗)

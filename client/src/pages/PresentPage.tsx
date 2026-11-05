@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { ServerToPresentMsg } from '@ws-quiz/shared';
 import { useSocket, wsUrl } from '../hooks/useSocket.ts';
 import Timer from '../components/Timer.tsx';
+import CodeBlock from '../components/CodeBlock.tsx';
 
 type Phase = 'idle' | 'active' | 'ended';
 
@@ -52,14 +53,14 @@ export default function PresentPage() {
       {phase === 'active' && question !== null && (
         <div>
           <Timer startedAt={question.startedAt} timeoutSec={question.timeoutSec} />
-          <pre><code>{question.code}</code></pre>
+          <CodeBlock>{question.code}</CodeBlock>
           <p>{'Ответили: ' + String(answerCount) + ' / ' + String(totalCount)}</p>
         </div>
       )}
       {phase === 'ended' && (
         <div>
           <p>{'Правильный ответ:'}</p>
-          <pre><code>{correctAnswer}</code></pre>
+          <CodeBlock>{correctAnswer}</CodeBlock>
         </div>
       )}
     </>

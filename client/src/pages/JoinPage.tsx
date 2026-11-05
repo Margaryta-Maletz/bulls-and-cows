@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Score, ServerToStudentMsg } from '@ws-quiz/shared';
 import { useSocket, wsUrl } from '../hooks/useSocket.ts';
 import Scoreboard from '../components/Scoreboard.tsx';
+import CodeBlock from '../components/CodeBlock.tsx';
+import { LABELS } from '../labels.ts';
 
-const errorStyle = { color: 'red' } as const;
+type FormSubmit  = { preventDefault(): void };
+type InputChange = { currentTarget: { value: string } };
 
 type Phase = 'join' | 'waiting' | 'answering' | 'answered' | 'result';
 
@@ -77,7 +80,7 @@ export default function JoinPage() {
     }
   }, [lastMessage]);
 
-  const handleJoin = useCallback((e: { preventDefault(): void }) => {
+  const handleJoin = useCallback((e: FormSubmit) => {
     e.preventDefault();
     const trimmed = nameInput.trim();
     if (!trimmed) return;
@@ -85,53 +88,57 @@ export default function JoinPage() {
     send({ type: 'student_join', name: trimmed });
   }, [nameInput, send]);
 
-  const handleAnswer = useCallback((e: { preventDefault(): void }) => {
+  const handleAnswer = useCallback((e: FormSubmit) => {
     e.preventDefault();
     if (!question || !answer.trim()) return;
     send({ type: 'submit_answer', questionId: question.id, answer: answer.trim() });
   }, [question, answer, send]);
 
+  const handleNameChange   = useCallback((e: InputChange) => { setNameInput(e.currentTarget.value); }, []);
+  const handleAnswerChange = useCallback((e: InputChange) => { setAnswer(e.currentTarget.value); }, []);
+  const codeSnippet        = question?.code ?? '';
+
   if (status === 'closed') {
-    return <p>{'Переподключение...'}</p>;
+    return <p>{LABELS.reconnecting}</p>;
   }
 
   return (
     <>
       {phase === 'join' && (
         <form onSubmit={handleJoin}>
-          <h1>{'Войти в игру'}</h1>
-          {error && <p style={errorStyle}>{error}</p>}
+          <h1>{LABELS.gameTitle}</h1>
+          {error && <p className="error">{error}</p>}
           <input
             value={nameInput}
-            onChange={e => setNameInput(e.target.value)}
-            placeholder={'Никнейм'}
+            onChange={handleNameChange}
+            placeholder={LABELS.nickname}
           />
-          <button type="submit">{'Войти'}</button>
+          <button type="submit">{LABELS.joinBtn}</button>
         </form>
       )}
       {phase === 'waiting' && (
-        <p>{'Ожидаем вопрос...'}</p>
+        <p>{LABELS.waiting}</p>
       )}
       {phase === 'answering' && question !== null && (
         <form onSubmit={handleAnswer}>
-          <pre><code>{question.code}</code></pre>
-          {error && <p style={errorStyle}>{error}</p>}
+          {error && <p className="error">{error}</p>}
+          <CodeBlock>{codeSnippet}</CodeBlock>
           <input
             value={answer}
-            onChange={e => setAnswer(e.target.value)}
-            placeholder={'Что выведет консоль?'}
+            onChange={handleAnswerChange}
+            placeholder={LABELS.answerPrompt}
           />
-          <button type="submit">{'Отправить'}</button>
+          <button type="submit">{LABELS.submitBtn}</button>
         </form>
       )}
       {phase === 'answered' && (
-        <p>{'Ответ принят, ждём результатов...'}</p>
+        <p>{LABELS.waitingResult}</p>
       )}
       {phase === 'result' && result !== null && (
         <div>
-          <p>{result.correct ? 'Верно!' : 'Неверно!'}</p>
-          <p>{'Правильный ответ: ' + result.correctAnswer}</p>
-          <p>{'Всего очков: ' + String(result.totalPoints)}</p>
+          <p>{result.correct ? LABELS.correct : LABELS.incorrect}</p>
+          <p>{LABELS.rightAnswer + result.correctAnswer}</p>
+          <p>{LABELS.totalPoints + String(result.totalPoints)}</p>
           <Scoreboard scores={scores} />
         </div>
       )}
