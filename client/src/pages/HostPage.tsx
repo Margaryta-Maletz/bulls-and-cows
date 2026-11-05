@@ -39,6 +39,7 @@ export default function HostPage() {
           .catch(() => { /* no questions available */ });
         break;
       case 'auth_failed':
+        setTokenInput('');
         setAuthError(lastMessage.reason);
         break;
       case 'student_joined':
