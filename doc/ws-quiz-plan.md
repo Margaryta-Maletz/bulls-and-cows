@@ -81,8 +81,8 @@
 | State | in-memory `Map` на сервере | Сессия одноразовая — БД не нужна. |
 | Highlighting | highlight.js | Подсветка JS-кода в задачах. UMD-сборка с cdnjs. |
 | Стили | CSS Modules + CSS-переменные | Без Tailwind, нет доп. build-шага. |
-| Shared types | `shared/types.ts` (workspace) | Типы WS-событий общие для клиента и сервера. |
-| Монорепо | npm workspaces | `server/` + `client/` + `shared/` в одном репозитории. |
+| Shared types | `../shared/types.ts` (workspace) | Типы WS-событий общие для клиента и сервера. |
+| Монорепо | npm workspaces | `../server` + `client/` + `shared/` в одном репозитории. |
 | Деплой | Railway / Render | Поддерживает постоянные WS-соединения. Free tier + env-переменные. |
 
 ---
@@ -99,7 +99,7 @@ cd server && npx tsx watch src/index.ts
 cd client && npm run dev
 ```
 
-**Vite proxy** (`client/vite.config.ts`) — обязателен, иначе WS не работает в dev:
+**Vite proxy** (`../client/vite.config.ts`) — обязателен, иначе WS не работает в dev:
 
 ```ts
 server: {
@@ -222,16 +222,80 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 
 ### Phase 1 — Фундамент (~3–4 ч)
 
-- [ ] Express + ws.Server на одном порту
-- [ ] `GameSession`: join → question → submit → score
-- [ ] `shared/types.ts` — все WS-типы (включая error-события и reconnectToken)
-- [ ] `scripts/md-to-json.ts` — конвертер задач, минимум 3 вопроса для тестирования
-- [ ] `useSocket` hook + reconnect с `reconnectToken` из `sessionStorage`
-- [ ] `JoinPage`: никнейм → ожидание → ответ → результат
-- [ ] `HostPage`: запуск / завершение / таймер / счётчик
-- [ ] Авто-scoring (exact match после normalize)
-- [ ] Простой `Scoreboard` компонент
-- [ ] Vite proxy + tsx watch для dev
+#### 1.1 Монорепо + скелет проекта (~20 мин)
+- [ ] `../package.json` в корне с `workspaces: ["server", "client", "shared"]`
+- [ ] `../shared/package.json` + `shared/types.ts` — пустой файл с заглушками типов
+- [ ] `../server/package.json` + `tsconfig.json` + зависимости (`express`, `ws`, `tsx`)
+- [ ] `../client` — `npm create vite@latest` с React + TypeScript
+- [ ] `.env.example` для сервера (`HOST_TOKEN=`)
+
+#### 1.2 Shared types (~15 мин)
+- [ ] `Role`: `"student" | "host" | "present"`
+- [ ] `Question`: `{ id, code, answers[] }`
+- [ ] `Score`: `{ studentId, name, points }`
+- [ ] Все типы событий Student→Server, Host→Server, Server→Client (см. таблицы выше)
+- [ ] Экспортировать из одного `index.ts`
+
+#### 1.3 Express + WebSocket сервер (~20 мин)
+- [ ] `server/src/index.ts`: Express слушает порт 3000
+- [ ] `ws.Server({ server })` — WS поверх того же HTTP-сервера
+- [ ] Маршрут `GET /health` возвращает `{ ok: true }`
+- [ ] При WS `connect` — логировать в консоль, при `disconnect` — тоже
+- [ ] Проверить: `curl localhost:3000/health` отвечает
+
+#### 1.4 GameSession — структура данных (~25 мин)
+- [ ] `server/src/session.ts`: класс `GameSession`
+- [ ] `students: Map<studentId, { name, points, reconnectToken, ws }>`
+- [ ] `activeQuestion: { id, startedAt, timeoutSec } | null`
+- [ ] `answers: Map<studentId, { answer, correct }>` для текущего раунда
+- [ ] Методы: `joinStudent`, `rejoinStudent`, `startQuestion`, `submitAnswer`, `endQuestion`
+
+#### 1.5 WS-обработчики сервера (~30 мин)
+- [ ] `server/src/handlers.ts`: `handleMessage(ws, raw, session)` — switch по `type`
+- [ ] `student_join` → `welcome` (новый) или `join_failed` (имя занято)
+- [ ] `student_join` с `reconnectToken` → восстановить очки
+- [ ] `host_auth` → `auth_success` / `auth_failed`
+- [ ] `start_question` → broadcast `question_started` всем студентам и present
+- [ ] `submit_answer` → `answer_received` или `answer_rejected`
+
+#### 1.6 Авто-scoring + normalizer (~20 мин)
+- [ ] `server/src/normalizer.ts`: цепочка `.trim → .toLowerCase → пробелы → parseFloat`
+- [ ] В `submitAnswer`: нормализовать ответ и сравнить с `question.answers`
+- [ ] По окончании вопроса: начислить очки, отправить `round_result` студентам и `round_results` ведущему
+
+#### 1.7 Конвертер задач (~20 мин)
+- [ ] `scripts/md-to-json.ts`: читает `.md`, парсит блоки с кодом и ответами
+- [ ] Сохраняет в `questions/week-XX.json` в формате `Question[]`
+- [ ] Добавить минимум 3 вопроса вручную в `questions/week-09.json` для тестирования
+
+#### 1.8 useSocket hook (~20 мин)
+- [ ] `client/src/hooks/useSocket.ts`: `new WebSocket(url)`
+- [ ] Отправлять/принимать JSON-сообщения
+- [ ] При `close` — переподключаться через 2 с, передавать `reconnectToken` из `sessionStorage`
+- [ ] Экспортировать `send(msg)` и `lastMessage`
+
+#### 1.9 JoinPage (~30 мин)
+- [ ] Шаг 1 — форма с полем «никнейм», отправка `student_join`
+- [ ] Шаг 2 — «Ожидаем вопрос...» пока нет `question_started`
+- [ ] Шаг 3 — поле ввода ответа + кнопка Submit → `submit_answer`
+- [ ] Шаг 4 — показать `round_result` (правильно/нет, очки)
+- [ ] Обработать `join_failed` — показать сообщение об ошибке
+
+#### 1.10 HostPage (минимальный) (~25 мин)
+- [ ] Форма авторизации: ввести токен → `host_auth`
+- [ ] После `auth_success`: выпадающий список задач из JSON + кнопка «Запустить»
+- [ ] `start_question` с выбранным `questionId` и `timeoutSec`
+- [ ] Счётчик «Ответили X / Y»
+- [ ] Кнопка «Завершить раунд» → `end_question`
+
+#### 1.11 Простой Scoreboard (~15 мин)
+- [ ] `client/src/components/Scoreboard.tsx`: принимает `scores[]`, рендерит таблицу
+- [ ] Обновляется при `leaderboard`-событии
+- [ ] Показывается на JoinPage после `round_result`
+
+#### 1.12 Vite proxy + dev-запуск (~10 мин)
+- [ ] `../client/vite.config.ts`: proxy `/ws` → `ws://localhost:3000`, `/health` → `http://localhost:3000`
+- [ ] Проверить сквозной тест: открыть `/join`, ввести никнейм, ведущий запускает вопрос, студент отвечает, видит результат
 
 ### Phase 2 — Полный игровой поток (~3–4 ч)
 
