@@ -4,4 +4,10 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/ws':     { target: 'ws://localhost:3000',   ws: true },
+      '/health': { target: 'http://localhost:3000' },
+    },
+  },
 })
