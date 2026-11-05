@@ -1,151 +1,94 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { Score, ServerToStudentMsg } from '@ws-quiz/shared';
-import { useSocket, wsUrl } from '../hooks/useSocket.ts';
 import Scoreboard from '../components/Scoreboard.tsx';
 import CodeBlock from '../components/CodeBlock.tsx';
+import Chat from '../components/Chat.tsx';
+import { useJoinGame } from '../hooks/useJoinGame.ts';
 import { LABELS } from '../labels.ts';
 
-type FormSubmit  = { preventDefault(): void };
-type InputChange = { currentTarget: { value: string } };
-
-type Phase = 'join' | 'waiting' | 'answering' | 'answered' | 'result';
-
-interface ActiveQuestion {
-  id: string;
-  code: string;
-}
-
-interface RoundResult {
-  correct: boolean;
-  correctAnswer: string;
-  totalPoints: number;
-}
+// Module-level — no JSX context, no S6747 risk
+const reconnecting  = LABELS.reconnecting;
+const gameTitle     = LABELS.gameTitle;
+const nickname      = LABELS.nickname;
+const joinBtn       = LABELS.joinBtn;
+const waiting       = LABELS.waiting;
+const answerPrompt  = LABELS.answerPrompt;
+const submitBtn     = LABELS.submitBtn;
+const waitingResult = LABELS.waitingResult;
+const lblCorrect    = LABELS.correct;
+const lblIncorrect  = LABELS.incorrect;
+const rightAnswer   = LABELS.rightAnswer;
+const totalPoints   = LABELS.totalPoints;
 
 export default function JoinPage() {
-  const { send, lastMessage, status } = useSocket<ServerToStudentMsg>(wsUrl());
+  const game = useJoinGame();
 
-  const [phase, setPhase]           = useState<Phase>('join');
-  const [nameInput, setNameInput]   = useState('');
-  const [answer, setAnswer]         = useState('');
-  const [error, setError]           = useState('');
-  const [question, setQuestion]     = useState<ActiveQuestion | null>(null);
-  const [result, setResult]         = useState<RoundResult | null>(null);
-  const [scores, setScores]         = useState<Score[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (status !== 'open') return;
-    try {
-      const storedName  = sessionStorage.getItem('studentName');
-      const storedToken = sessionStorage.getItem('reconnectToken');
-      if (storedName && storedToken) {
-        send({ type: 'student_join', name: storedName, reconnectToken: storedToken });
-      }
-    } catch { /* sessionStorage unavailable in some contexts */ }
-  }, [status, send]);
-
-  useEffect(() => {
-    if (!lastMessage) return;
-    switch (lastMessage.type) {
-      case 'welcome':
-        try { sessionStorage.setItem('reconnectToken', lastMessage.reconnectToken); } catch {}
-        // oxlint-disable-next-line react/set-state-in-effect -- WebSocket messages drive this component's state.
-        setPhase('waiting');
-        setError('');
-        break;
-      case 'join_failed':
-        setError(lastMessage.reason);
-        break;
-      case 'question_started':
-        setAnswer('');
-        setError('');
-        setIsSubmitting(false);
-        setQuestion({ id: lastMessage.questionId, code: lastMessage.code });
-        setPhase('answering');
-        break;
-      case 'answer_received':
-        setPhase('answered');
-        break;
-      case 'answer_rejected':
-        setIsSubmitting(false);
-        setError(lastMessage.reason);
-        break;
-      case 'round_result':
-        setResult({
-          correct: lastMessage.correct,
-          correctAnswer: lastMessage.correctAnswer,
-          totalPoints: lastMessage.totalPoints,
-        });
-        setPhase('result');
-        break;
-      case 'leaderboard':
-        setScores(lastMessage.scores);
-        break;
-    }
-  }, [lastMessage]);
-
-  const handleJoin = useCallback((e: FormSubmit) => {
-    e.preventDefault();
-    const trimmed = nameInput.trim();
-    if (!trimmed) return;
-    try { sessionStorage.setItem('studentName', trimmed); } catch {}
-    send({ type: 'student_join', name: trimmed });
-  }, [nameInput, send]);
-
-  const handleAnswer = useCallback((e: FormSubmit) => {
-    e.preventDefault();
-    if (!question || !answer.trim() || isSubmitting) return;
-    setIsSubmitting(true);
-    send({ type: 'submit_answer', questionId: question.id, answer: answer.trim() });
-  }, [question, answer, isSubmitting, send]);
-
-  const handleNameChange   = useCallback((e: InputChange) => { setNameInput(e.currentTarget.value); }, []);
-  const handleAnswerChange = useCallback((e: InputChange) => { setAnswer(e.currentTarget.value); }, []);
-  const codeSnippet        = question?.code ?? '';
-
-  if (status === 'closed') {
-    return <p>{LABELS.reconnecting}</p>;
+  if (game.status === 'closed') {
+    return <p>{reconnecting}</p>;
   }
+
+  // Individual assignments — no destructuring block, no {} for Sonar to misread
+  const phase         = game.phase;
+  const error         = game.error;
+  const question      = game.question;
+  const result        = game.result;
+  const scores        = game.scores;
+  const isSubmitting  = game.isSubmitting;
+  const chatMsgs      = game.chatMsgs;
+  const nameInput     = game.nameInput;
+  const answer        = game.answer;
+  const handleJoin         = game.handleJoin;
+  const handleAnswer       = game.handleAnswer;
+  const handleNameChange   = game.handleNameChange;
+  const handleAnswerChange = game.handleAnswerChange;
+  const handleChatSend     = game.handleChatSend;
+
+  const codeSnippet = question !== null ? question.code : '';
+  const correctness = result?.correct ? lblCorrect : lblIncorrect;
+  const resultText  = result !== null ? correctness : '';
+  const resultRight = result !== null ? rightAnswer + result.correctAnswer : '';
+  const resultPts   = result !== null ? totalPoints + String(result.totalPoints) : '';
+
+  const errorEl   = error !== '' ? <p className="error">{error}</p> : null;
+  const chatPanel = <Chat messages={chatMsgs} onSend={handleChatSend} />;
+  const codeBlock = <CodeBlock>{codeSnippet}</CodeBlock>;
+  const board     = <Scoreboard scores={scores} />;
 
   return (
     <>
       {phase === 'join' && (
         <form onSubmit={handleJoin}>
-          <h1>{LABELS.gameTitle}</h1>
-          {error && <p className="error">{error}</p>}
-          <input
-            value={nameInput}
-            onChange={handleNameChange}
-            placeholder={LABELS.nickname}
-          />
-          <button type="submit">{LABELS.joinBtn}</button>
+          <h1>{gameTitle}</h1>
+          {errorEl}
+          <input value={nameInput} onChange={handleNameChange} placeholder={nickname} />
+          <button type="submit">{joinBtn}</button>
         </form>
       )}
       {phase === 'waiting' && (
-        <p>{LABELS.waiting}</p>
+        <div>
+          <p>{waiting}</p>
+          {chatPanel}
+        </div>
       )}
       {phase === 'answering' && question !== null && (
         <form onSubmit={handleAnswer}>
-          {error && <p className="error">{error}</p>}
-          <CodeBlock>{codeSnippet}</CodeBlock>
-          <input
-            value={answer}
-            onChange={handleAnswerChange}
-            placeholder={LABELS.answerPrompt}
-            disabled={isSubmitting}
-          />
-          <button type="submit" disabled={isSubmitting}>{LABELS.submitBtn}</button>
+          {errorEl}
+          {codeBlock}
+          <input value={answer} onChange={handleAnswerChange} placeholder={answerPrompt} disabled={isSubmitting} />
+          <button type='submit' disabled={isSubmitting}>{submitBtn}</button>
         </form>
       )}
       {phase === 'answered' && (
-        <p>{LABELS.waitingResult}</p>
+        <div>
+          <p>{waitingResult}</p>
+          {chatPanel}
+        </div>
       )}
       {phase === 'result' && result !== null && (
         <div>
-          <p>{result.correct ? LABELS.correct : LABELS.incorrect}</p>
-          <p>{LABELS.rightAnswer + result.correctAnswer}</p>
-          <p>{LABELS.totalPoints + String(result.totalPoints)}</p>
-          <Scoreboard scores={scores} />
+          <p>{resultText}</p>
+          <p>{resultRight}</p>
+          <p>{resultPts}</p>
+          {board}
+          {chatPanel}
         </div>
       )}
     </>

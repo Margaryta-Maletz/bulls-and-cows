@@ -370,9 +370,9 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 - [x] `CodeBlock`: highlight.js из cdnjs — выполнено в Phase 2
 
 #### 3.4 Chat: JoinPage интеграция (~20 мин)
-- [ ] Обработать `chat_from_host` → добавлять в список сообщений
-- [ ] Отправка `chat_to_host` через `<Chat>` компонент
-- [ ] Показывать в фазах `waiting`, `answered`, `result`
+- [x] Обработать `chat_from_host` → добавлять в список сообщений
+- [x] Отправка `chat_to_host` через `<Chat>` компонент
+- [x] Показывать в фазах `waiting`, `answered`, `result`
 
 #### 3.5 Chat: HostPage интеграция (~30 мин)
 - [ ] Обработать `chat_from_student` → список по каждому студенту
