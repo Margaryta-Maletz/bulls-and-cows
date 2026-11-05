@@ -309,9 +309,9 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 - [x] При `endQuestion` — broadcast `question_ended` с правильным ответом
 
 #### 2.3 Timer компонент (~15 мин)
-- [ ] `client/src/components/Timer.tsx`: принимает `startedAt` и `timeoutSec`
-- [ ] Вычисляет `remaining = Math.max(0, timeoutSec - (Date.now() - startedAt) / 1000)` на каждом тике
-- [ ] Рендерит прогресс-бар (`<progress value remaining max timeoutSec>`)
+- [x] `client/src/components/Timer.tsx`: принимает `startedAt` и `timeoutSec`
+- [x] Вычисляет `remaining = Math.max(0, timeoutSec - (Date.now() - startedAt) / 1000)` на каждом тике
+- [x] Рендерит прогресс-бар (`<progress value remaining max timeoutSec>`)
 
 #### 2.4 PresentPage (~20 мин)
 - [ ] `client/src/pages/PresentPage.tsx`: подключается через `wsUrl('present')`
