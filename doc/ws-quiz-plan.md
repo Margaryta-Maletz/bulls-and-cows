@@ -354,10 +354,10 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 ### Phase 3 — Чат + UX (~4–6 ч)
 
 #### 3.1 CSS: базовые стили (~30 мин)
-- [ ] Стили для `<form>`, `<button>`, `<input>`, `<select>` — единый look
-- [ ] `<pre><code>`: паддинги, `overflow-x: auto`, скролл длинного кода
-- [ ] `.scoreboard`: стили таблицы рекордов
-- [ ] Общий контейнер страниц: max-width, padding
+- [x] Стили для `<form>`, `<button>`, `<input>`, `<select>` — единый look
+- [x] `<pre><code>`: паддинги, `overflow-x: auto`, скролл длинного кода
+- [x] `.scoreboard`: стили таблицы рекордов
+- [x] Общий контейнер страниц: max-width, padding
 
 #### 3.2 Timer: CSS transition (~15 мин)
 - [ ] Заменить `<progress>` на `<div>` с `width: X%` и `transition: width 0.5s linear`
