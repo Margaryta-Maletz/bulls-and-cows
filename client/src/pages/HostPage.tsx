@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Question, Score, ServerToHostMsg, StudentRoundResult } from '@ws-quiz/shared';
 import { useSocket, wsUrl } from '../hooks/useSocket.ts';
+import Scoreboard from '../components/Scoreboard.tsx';
 
 type Phase = 'auth' | 'ready' | 'running' | 'ended';
 
@@ -71,7 +72,9 @@ export default function HostPage() {
     send({ type: 'end_question', questionId: activeId });
   }, [activeId, send]);
 
-  if (status === 'closed') return <p>Переподключение...</p>;
+  if (status === 'closed') {
+    return <p>Переподключение...</p>;
+  }
 
   if (phase === 'auth') {
     return (
@@ -93,7 +96,7 @@ export default function HostPage() {
     return (
       <div>
         <h1>Вопрос: {activeId}</h1>
-        <p>Ответили: {answeredCount} / {studentCount}</p>
+        <p>{'Ответили: ' + String(answeredCount) + ' / ' + String(studentCount)}</p>
         <button type="button" onClick={handleEnd}>Завершить раунд</button>
       </div>
     );
@@ -110,7 +113,8 @@ export default function HostPage() {
           <ul>
             {results.map(r => (
               <li key={r.studentId}>
-                {r.name}: <code>{r.answer}</code> — {r.correct ? 'верно' : 'неверно'}
+                {r.name}: <code>{r.answer}</code>
+                {r.correct ? ' — верно' : ' — неверно'}
               </li>
             ))}
           </ul>
@@ -136,14 +140,7 @@ export default function HostPage() {
         <button type="submit">Запустить вопрос</button>
       </form>
 
-      {scores.length > 0 && (
-        <section>
-          <h2>Рейтинг</h2>
-          <ol>
-            {scores.map(s => <li key={s.studentId}>{s.name} — {s.points}</li>)}
-          </ol>
-        </section>
-      )}
+      <Scoreboard scores={scores} />
     </div>
   );
 }

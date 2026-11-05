@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Score, ServerToStudentMsg } from '@ws-quiz/shared';
-
 import { useSocket, wsUrl } from '../hooks/useSocket.ts';
+import Scoreboard from '../components/Scoreboard.tsx';
+
+const errorStyle = { color: 'red' } as const;
 
 type Phase = 'join' | 'waiting' | 'answering' | 'answered' | 'result';
 
@@ -19,15 +21,14 @@ interface RoundResult {
 export default function JoinPage() {
   const { send, lastMessage, status } = useSocket<ServerToStudentMsg>(wsUrl());
 
-  const [phase, setPhase]     = useState<Phase>('join');
-  const [nameInput, setNameInput] = useState('');
-  const [answer, setAnswer]   = useState('');
-  const [error, setError]     = useState('');
-  const [question, setQuestion] = useState<ActiveQuestion | null>(null);
-  const [result, setResult]   = useState<RoundResult | null>(null);
-  const [scores, setScores]   = useState<Score[]>([]);
+  const [phase, setPhase]           = useState<Phase>('join');
+  const [nameInput, setNameInput]   = useState('');
+  const [answer, setAnswer]         = useState('');
+  const [error, setError]           = useState('');
+  const [question, setQuestion]     = useState<ActiveQuestion | null>(null);
+  const [result, setResult]         = useState<RoundResult | null>(null);
+  const [scores, setScores]         = useState<Score[]>([]);
 
-  // On (re)connect: auto-rejoin when session data is stored
   useEffect(() => {
     if (status !== 'open') return;
     try {
@@ -91,63 +92,49 @@ export default function JoinPage() {
   }, [question, answer, send]);
 
   if (status === 'closed') {
-    return <p>Переподключение...</p>;
+    return <p>{'Переподключение...'}</p>;
   }
 
-  if (phase === 'join') {
-    return (
-      <form onSubmit={handleJoin}>
-        <h1>Войти в игру</h1>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <input
-          value={nameInput}
-          onChange={e => setNameInput(e.target.value)}
-          placeholder="Никнейм"
-        />
-        <button type="submit">Войти</button>
-      </form>
-    );
-  }
-
-  if (phase === 'waiting') {
-    return <p>Ожидаем вопрос...</p>;
-  }
-
-  if (phase === 'answering' && question) {
-    return (
-      <form onSubmit={handleAnswer}>
-        <pre><code>{question.code}</code></pre>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <input
-          value={answer}
-          onChange={e => setAnswer(e.target.value)}
-          placeholder="Что выведет консоль?"
-        />
-        <button type="submit">Отправить</button>
-      </form>
-    );
-  }
-
-  if (phase === 'answered') {
-    return <p>Ответ принят, ждём результатов...</p>;
-  }
-
-  if (phase === 'result' && result) {
-    return (
-      <div>
-        <p>{result.correct ? 'Верно!' : 'Неверно'}</p>
-        <p>Правильный ответ: <code>{result.correctAnswer}</code></p>
-        <p>Всего очков: {result.totalPoints}</p>
-        {scores.length > 0 && (
-          <ol>
-            {scores.map(s => (
-              <li key={s.studentId}>{s.name} — {s.points}</li>
-            ))}
-          </ol>
-        )}
-      </div>
-    );
-  }
-
-  return null;
+  return (
+    <>
+      {phase === 'join' && (
+        <form onSubmit={handleJoin}>
+          <h1>{'Войти в игру'}</h1>
+          {error && <p style={errorStyle}>{error}</p>}
+          <input
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            placeholder={'Никнейм'}
+          />
+          <button type="submit">{'Войти'}</button>
+        </form>
+      )}
+      {phase === 'waiting' && (
+        <p>{'Ожидаем вопрос...'}</p>
+      )}
+      {phase === 'answering' && question !== null && (
+        <form onSubmit={handleAnswer}>
+          <pre><code>{question.code}</code></pre>
+          {error && <p style={errorStyle}>{error}</p>}
+          <input
+            value={answer}
+            onChange={e => setAnswer(e.target.value)}
+            placeholder={'Что выведет консоль?'}
+          />
+          <button type="submit">{'Отправить'}</button>
+        </form>
+      )}
+      {phase === 'answered' && (
+        <p>{'Ответ принят, ждём результатов...'}</p>
+      )}
+      {phase === 'result' && result !== null && (
+        <div>
+          <p>{result.correct ? 'Верно!' : 'Неверно!'}</p>
+          <p>{'Правильный ответ: ' + result.correctAnswer}</p>
+          <p>{'Всего очков: ' + String(result.totalPoints)}</p>
+          <Scoreboard scores={scores} />
+        </div>
+      )}
+    </>
+  );
 }
