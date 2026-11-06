@@ -282,8 +282,15 @@ function onPreviewQuestion(
     type: 'question_started',
     questionId: q.id,
     code: q.code,
+    questionType: q.type ?? 'input',
+    options: q.options,
     timeoutSec: 0,
     startedAt: Date.now(),
+  });
+  broadcastRole(ctx.connections, ['present'], {
+    type: 'question_ended',
+    questionId: q.id,
+    correctAnswer: q.answers[0],
   });
 }
 

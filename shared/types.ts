@@ -8,6 +8,7 @@ export interface Question {
   type?: QuestionType;   // default: 'input'
   answers: string[];     // correct answers; for multiple — individual correct options
   options?: string[];    // for single/multiple: all 4 displayed options
+  comment?: string;      // подсказка для ведущего, не показывается студентам
 }
 
 export interface Score {
@@ -97,7 +98,7 @@ export interface QuestionStartedMsg {
   type: 'question_started';
   questionId: string;
   code: string;
-  questionType: QuestionType;
+  questionType?: QuestionType;
   options?: string[];
   timeoutSec: number;
   startedAt: number;

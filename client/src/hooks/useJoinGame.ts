@@ -7,6 +7,15 @@ import { LABELS } from '../labels.ts';
 type FormSubmit  = { preventDefault(): void };
 type InputChange = { currentTarget: { value: string } };
 
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export type Phase = 'join' | 'waiting' | 'answering' | 'answered';
 
 export interface ActiveQuestion {
@@ -55,7 +64,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         phase: 'answering',
         error: '',
         isSubmitting: false,
-        question: { id: action.questionId, code: action.code, questionType: action.questionType, options: action.options },
+        question: { id: action.questionId, code: action.code, questionType: action.questionType, options: action.options ? shuffle(action.options) : undefined },
         chatMsgs: [...state.chatMsgs, {
           id: String(++msgSeq),
           from: action.questionId,

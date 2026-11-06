@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import type { ServerToPresentMsg } from '@ws-quiz/shared';
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+import type { ServerToPresentMsg, QuestionType } from '@ws-quiz/shared';
 import { useSocket, wsUrl } from './useSocket.ts';
 
 type Phase = 'idle' | 'active' | 'ended';
@@ -7,6 +16,8 @@ type Phase = 'idle' | 'active' | 'ended';
 export interface PresentGameApi {
   phase: Phase;
   questionSrc: string;
+  questionType: QuestionType;
+  options: string[];
   startedAt: number;
   timeoutSec: number;
   answerCount: number;
@@ -20,6 +31,8 @@ export function usePresentGame(): PresentGameApi {
 
   const [phase, setPhase]               = useState<Phase>('idle');
   const [questionSrc, setQuestionSrc]   = useState('');
+  const [questionType, setQuestionType] = useState<QuestionType>('input');
+  const [options, setOptions]           = useState<string[]>([]);
   const [startedAt, setStartedAt]       = useState(0);
   const [timeoutSec, setTimeoutSec]     = useState(60);
   const [answerCount, setAnswerCount]   = useState(0);
@@ -31,6 +44,8 @@ export function usePresentGame(): PresentGameApi {
     switch (lastMessage.type) {
       case 'question_started':
         setQuestionSrc(lastMessage.code);
+        setQuestionType(lastMessage.questionType ?? 'input');
+        setOptions(lastMessage.options ? shuffle(lastMessage.options) : []);
         setStartedAt(lastMessage.startedAt);
         setTimeoutSec(lastMessage.timeoutSec);
         setAnswerCount(0);
@@ -48,5 +63,5 @@ export function usePresentGame(): PresentGameApi {
     }
   }, [lastMessage]);
 
-  return { phase, questionSrc, startedAt, timeoutSec, answerCount, totalCount, correctAnswer, status };
+  return { phase, questionSrc, questionType, options, startedAt, timeoutSec, answerCount, totalCount, correctAnswer, status };
 }

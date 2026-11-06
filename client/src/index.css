@@ -294,6 +294,58 @@ li {
   margin-top: 20px;
 }
 
+.present-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 16px;
+  width: 100%;
+  max-width: 640px;
+}
+
+.present-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 20px;
+  background: var(--code-bg);
+  border-radius: 8px;
+  font-size: 1.2rem;
+}
+
+.present-option-correct {
+  background: var(--accent-bg);
+  border: 2px solid var(--accent);
+}
+
+.present-option-label {
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 24px;
+}
+
+.present-option code {
+  background: none;
+  padding: 0;
+  font-size: 1.1rem;
+}
+
+.present-answer-inline {
+  font-size: 1.4rem;
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.present-answer-inline code {
+  font-size: 1.3rem;
+  color: var(--accent);
+  background: var(--accent-bg);
+  padding: 4px 12px;
+  border: 1px solid var(--accent-border);
+}
+
 .present-answer pre {
   font-size: 1.3rem;
   line-height: 1.7;
@@ -637,25 +689,25 @@ body:has(.host-layout) #root {
 
 .q-card:hover { opacity: 0.8; }
 
-.q-card-active {
+button.q-card-active {
   background: #fef9c3;
   border-color: #ca8a04;
 }
 
-.q-card-pass {
+button.q-card-pass {
   background: #dcfce7;
   border-color: #16a34a;
 }
 
-.q-card-fail {
+button.q-card-fail {
   background: #fee2e2;
   border-color: #dc2626;
 }
 
 @media (prefers-color-scheme: dark) {
-  .q-card-active { background: #422006; border-color: #ca8a04; }
-  .q-card-pass   { background: #052e16; border-color: #16a34a; }
-  .q-card-fail   { background: #450a0a; border-color: #dc2626; }
+  button.q-card-active { background: #422006; border-color: #ca8a04; }
+  button.q-card-pass   { background: #052e16; border-color: #16a34a; }
+  button.q-card-fail   { background: #450a0a; border-color: #dc2626; }
 }
 
 .q-card-id {
@@ -681,6 +733,15 @@ body:has(.host-layout) #root {
   display: -webkit-box;
   -webkit-line-clamp: 7;
   -webkit-box-orient: vertical;
+}
+
+.q-card-comment {
+  font-size: 10px;
+  font-style: italic;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .q-card-footer {

@@ -52,9 +52,11 @@ export default function HostPage() {
         type="button"
         className={cardClass(stat)}
         onClick={() => g.handleCardClick(q.id)}
+        title={q.comment}
       >
         <span className="q-card-id">{q.id}</span>
         <pre className="q-card-code">{q.code}</pre>
+        {q.comment && <span className="q-card-comment">{q.comment}</span>}
         <div className="q-card-footer">
           <span className="q-card-answer">{q.answers[0]}</span>
           {statsEl}

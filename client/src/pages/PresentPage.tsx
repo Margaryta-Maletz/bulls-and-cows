@@ -39,15 +39,39 @@ export default function PresentPage() {
           <div className="present-code">
             <CodeBlock>{questionSrc}</CodeBlock>
           </div>
+          {g.options.length > 0 && (
+            <div className="present-options">
+              {g.options.map((opt, i) => (
+                <div key={opt} className="present-option">
+                  <span className="present-option-label">{String.fromCodePoint(65 + i)}</span>
+                  <code>{opt}</code>
+                </div>
+              ))}
+            </div>
+          )}
           <p className="present-counter">{counterText}</p>
         </div>
       )}
       {isEnded && (
         <div>
-          <p>{pRightAnswer}</p>
-          <div className="present-answer">
-            <CodeBlock>{correctAnswer}</CodeBlock>
+          <div className="present-code">
+            <CodeBlock>{questionSrc}</CodeBlock>
           </div>
+          {g.options.length > 0 ? (
+            <div className="present-options">
+              {g.options.map((opt, i) => (
+                <div key={opt} className={opt === correctAnswer ? 'present-option present-option-correct' : 'present-option'}>
+                  <span className="present-option-label">{String.fromCodePoint(65 + i)}</span>
+                  <code>{opt}</code>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="present-answer-inline">
+              {pRightAnswer} <code>{correctAnswer}</code>
+            </p>
+          )}
+          <p className="present-counter">{counterText}</p>
         </div>
       )}
     </>
