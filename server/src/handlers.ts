@@ -176,6 +176,11 @@ function onStartQuestion(
     timeoutSec: msg.timeoutSec,
     startedAt: session.activeQuestion!.startedAt,
   });
+  broadcastRole(connections, ['present'], {
+    type: 'answer_count',
+    count: 0,
+    total: session.students.size,
+  });
 }
 
 function onSubmitAnswer(
