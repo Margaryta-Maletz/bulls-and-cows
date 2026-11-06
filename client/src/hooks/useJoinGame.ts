@@ -54,6 +54,8 @@ let msgSeq = 0;
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
+    case 'session_reset':
+      return { ...INIT };
     case 'welcome':
       return { ...state, phase: 'waiting', error: '' };
     case 'join_failed':

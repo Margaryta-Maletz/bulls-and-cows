@@ -294,6 +294,15 @@ function onPreviewQuestion(
   });
 }
 
+function onResetSession(
+  info: ConnectionInfo,
+  ctx: HandlerCtx,
+): void {
+  if (info.role !== 'host') return;
+  broadcastRole(ctx.connections, ['student'], { type: 'session_reset' });
+  ctx.session.reset();
+}
+
 export function handleMessage(ws: WebSocket, raw: RawData, ctx: HandlerCtx): void {
   const info = ctx.connections.get(ws);
   if (!info) return;
@@ -315,5 +324,6 @@ export function handleMessage(ws: WebSocket, raw: RawData, ctx: HandlerCtx): voi
     case 'chat_to_host':     return onChatToHost(msg, info, ctx);
     case 'chat_to_student':  return onChatToStudent(msg, info, ctx);
     case 'preview_question': return onPreviewQuestion(msg, info, ctx);
+    case 'reset_session':    return onResetSession(info, ctx);
   }
 }

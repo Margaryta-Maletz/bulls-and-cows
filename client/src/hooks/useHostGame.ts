@@ -47,6 +47,7 @@ export interface HostGameApi {
   handleTimeoutChange: (e: InputChange) => void;
   handleFileChange: (e: InputChange) => void;
   handleCardClick: (questionId: string) => void;
+  handleReset: () => void;
   handleOverride: (studentId: string, correct: boolean) => () => void;
   handleChatStudentChange: (e: InputChange) => void;
   handleHostChatSend: (text: string) => void;
@@ -201,6 +202,16 @@ export function useHostGame(): HostGameApi {
     send({ type: 'start_question', questionId, timeoutSec });
   }, [questionStats, timeoutSec, send, updateActiveId]);
 
+  const handleReset = useCallback(() => {
+    send({ type: 'reset_session' });
+    setStudents([]);
+    setStudentCount(0);
+    studentCountRef.current = 0;
+    setScores([]);
+    setQuestionStats({});
+    updateActiveId('');
+  }, [send, updateActiveId]);
+
   const handleOverride = useCallback((studentId: string, correct: boolean) => () => {
     send({ type: 'override_score', studentId, correct });
   }, [send]);
@@ -228,6 +239,6 @@ export function useHostGame(): HostGameApi {
     students, studentCount, questionStats, scores,
     hostChats, chatStudentId, unreadCount, status, reconnected,
     handleAuth, handleTokenChange, handleTimeoutChange, handleFileChange,
-    handleCardClick, handleOverride, handleChatStudentChange, handleHostChatSend,
+    handleCardClick, handleReset, handleOverride, handleChatStudentChange, handleHostChatSend,
   };
 }

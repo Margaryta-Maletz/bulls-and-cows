@@ -92,7 +92,10 @@ export default function HostPage() {
         </div>
 
         <div className="host-chat-col">
-          <p className="students-count">{HOST.studentsPrefix + String(g.studentCount)}</p>
+          <div className="students-row">
+            <p className="students-count">{HOST.studentsPrefix + String(g.studentCount)}</p>
+            <button type="button" className="reset-btn" onClick={g.handleReset}>{HOST.resetSession}</button>
+          </div>
           <select value={g.chatStudentId} onChange={g.handleChatStudentChange}>
             <option value="">{HOST.chatSelectHint}</option>
             {g.students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}

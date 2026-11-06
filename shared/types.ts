@@ -73,13 +73,18 @@ export interface PreviewQuestionMsg {
   questionId: string;
 }
 
+export interface ResetSessionMsg {
+  type: 'reset_session';
+}
+
 export type HostToServerMsg =
   | HostAuthMsg
   | StartQuestionMsg
   | EndQuestionMsg
   | OverrideScoreMsg
   | ChatToStudentMsg
-  | PreviewQuestionMsg;
+  | PreviewQuestionMsg
+  | ResetSessionMsg;
 
 // ── Server → Student ──────────────────────────────────────────────────────────
 
@@ -131,6 +136,10 @@ export interface ChatFromHostMsg {
   text: string;
 }
 
+export interface SessionResetMsg {
+  type: 'session_reset';
+}
+
 export type ServerToStudentMsg =
   | WelcomeMsg
   | JoinFailedMsg
@@ -139,7 +148,8 @@ export type ServerToStudentMsg =
   | AnswerRejectedMsg
   | RoundResultMsg
   | LeaderboardMsg
-  | ChatFromHostMsg;
+  | ChatFromHostMsg
+  | SessionResetMsg;
 
 // ── Server → Host ─────────────────────────────────────────────────────────────
 

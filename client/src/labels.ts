@@ -55,6 +55,7 @@ export const HOST = {
   chatSelectHint:  'Выберите студента',
   chatOwn:         'Вы',
   unreadBadge:     'новых',
+  resetSession:    'Сбросить сессию',
   timeLabel:       'Время (сек):',
   cardAnswered:    ' / ',
   cardCorrect:     ' верных',
