@@ -1,0 +1,8 @@
+[build]
+buildCommand = "npm install"
+
+[deploy]
+startCommand = "npx tsx server/src/index.ts"
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "on_failure"
