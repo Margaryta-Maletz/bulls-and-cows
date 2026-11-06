@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       ws_url:
-        description: 'WebSocket URL сервера (например: wss://xxx.ngrok-free.app)'
-        required: true
+        description: 'WebSocket URL сервера (переопределяет secret VITE_WS_URL)'
+        required: false
         type: string
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
       - run: npm run build
         working-directory: client
         env:
-          VITE_WS_URL: ${{ inputs.ws_url }}
+          VITE_WS_URL: ${{ inputs.ws_url || secrets.VITE_WS_URL }}
           VITE_BASE: /quiz/
 
       - uses: peaceiris/actions-gh-pages@v3
