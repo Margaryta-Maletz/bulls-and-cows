@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Question, Score, ServerToHostMsg, StudentRoundResult } from '@ws-quiz/shared';
-import { useSocket, wsUrl } from './useSocket.ts';
+import { useSocket, wsUrl, apiUrl } from './useSocket.ts';
 import type { ChatMsg } from '../components/Chat.tsx';
 import { HOST } from '../labels.ts';
 
@@ -72,7 +72,7 @@ export function useHostGame(): HostGameApi {
 
   const loadFile = useCallback((filename: string) => {
     setQuestionFile(filename);
-    fetch('/questions/' + filename)
+    fetch(apiUrl('/questions/' + filename))
       .then(r => r.json() as Promise<Question[]>)
       .then(qs => {
         setQuestions(qs);
@@ -87,7 +87,7 @@ export function useHostGame(): HostGameApi {
       case 'auth_success':
         setPhase('ready');
         setAuthError('');
-        fetch('/questions/index.json')
+        fetch(apiUrl('/questions/index.json'))
           .then(r => r.json() as Promise<string[]>)
           .then(files => { setQuestionFiles(files); loadFile(files[0] ?? 'week-09.json'); })
           .catch(() => { loadFile('week-09.json'); });
