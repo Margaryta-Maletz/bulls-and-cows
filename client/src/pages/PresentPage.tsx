@@ -71,7 +71,7 @@ export default function PresentPage() {
               {pRightAnswer} <code>{correctAnswer}</code>
             </p>
           )}
-          <p className="present-counter">{counterText}</p>
+          {!g.isPreview && <p className="present-counter">{counterText}</p>}
         </div>
       )}
     </>

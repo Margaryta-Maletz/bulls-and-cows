@@ -23,6 +23,7 @@ export interface PresentGameApi {
   answerCount: number;
   totalCount: number;
   correctAnswer: string;
+  isPreview: boolean;
   status: 'connecting' | 'open' | 'closed';
 }
 
@@ -38,6 +39,7 @@ export function usePresentGame(): PresentGameApi {
   const [answerCount, setAnswerCount]   = useState(0);
   const [totalCount, setTotalCount]     = useState(0);
   const [correctAnswer, setCorrectAnswer] = useState('');
+  const [isPreview, setIsPreview]       = useState(false);
 
   useEffect(() => {
     if (!lastMessage) return;
@@ -46,6 +48,7 @@ export function usePresentGame(): PresentGameApi {
         setQuestionSrc(lastMessage.code);
         setQuestionType(lastMessage.questionType ?? 'input');
         setOptions(lastMessage.options ? shuffle(lastMessage.options) : []);
+        setIsPreview(lastMessage.timeoutSec === 0);
         setStartedAt(lastMessage.startedAt);
         setTimeoutSec(lastMessage.timeoutSec);
         setAnswerCount(0);
@@ -63,5 +66,5 @@ export function usePresentGame(): PresentGameApi {
     }
   }, [lastMessage]);
 
-  return { phase, questionSrc, questionType, options, startedAt, timeoutSec, answerCount, totalCount, correctAnswer, status };
+  return { phase, questionSrc, questionType, options, startedAt, timeoutSec, answerCount, totalCount, correctAnswer, isPreview, status };
 }
