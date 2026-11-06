@@ -16,6 +16,7 @@ function barColor(fraction: number): string {
 }
 
 export default function Timer({ startedAt, timeoutSec }: Props) {
+  if (timeoutSec === 0) return null;
   const [remaining, setRemaining] = useState(() => calcRemaining(startedAt, timeoutSec));
 
   useEffect(() => {

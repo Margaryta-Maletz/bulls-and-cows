@@ -23,8 +23,6 @@ interface HandlerCtx {
   questions: Map<string, Question>;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 function send(ws: WebSocket, msg: AnyServerMsg): void {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
 }
@@ -52,7 +50,35 @@ function rawToText(raw: RawData): string {
   return (raw as Buffer).toString('utf-8');
 }
 
-// ── Per-message handlers ──────────────────────────────────────────────────────
+function endQuestionAndBroadcast(hostWsOrNull: WebSocket | null, ctx: HandlerCtx): void {
+  const { session, connections, questions } = ctx;
+  const activeQ = session.activeQuestion;
+  const correctAnswer = activeQ ? (questions.get(activeQ.id)?.answers[0] ?? '') : '';
+  const results = session.endQuestion();
+
+  if (hostWsOrNull) send(hostWsOrNull, { type: 'round_results', results });
+
+  for (const r of results) {
+    const record = session.students.get(r.studentId);
+    if (record) {
+      send(record.ws, {
+        type: 'round_result',
+        correct: r.correct,
+        correctAnswer,
+        points: r.correct ? 1 : 0,
+        totalPoints: record.points,
+      });
+    }
+  }
+  broadcastRole(connections, ['present'], {
+    type: 'question_ended',
+    questionId: activeQ?.id ?? '',
+    correctAnswer,
+  });
+  const scores = session.scoreboard();
+  broadcastRole(connections, ['student', 'present'], { type: 'leaderboard', scores });
+  if (hostWsOrNull) send(hostWsOrNull, { type: 'scoreboard_update', scores });
+}
 
 function onStudentJoin(
   ws: WebSocket,
@@ -76,6 +102,8 @@ function onStudentJoin(
             type: 'question_started',
             questionId: q.id,
             code: q.code,
+            questionType: q.type ?? 'input',
+            options: q.options,
             timeoutSec: session.activeQuestion.timeoutSec,
             startedAt: session.activeQuestion.startedAt,
           });
@@ -101,6 +129,7 @@ function onHostAuth(
   ws: WebSocket,
   msg: Extract<ClientToServerMsg, { type: 'host_auth' }>,
   info: ConnectionInfo,
+  ctx: HandlerCtx,
 ): void {
   const token = process.env.HOST_TOKEN;
   if (!token || msg.token !== token) {
@@ -109,6 +138,14 @@ function onHostAuth(
   }
   info.role = 'host';
   send(ws, { type: 'auth_success' });
+
+  for (const [id, record] of ctx.session.students) {
+    send(ws, { type: 'student_joined', id, name: record.name });
+  }
+  const scores = ctx.session.scoreboard();
+  if (scores.length > 0) {
+    send(ws, { type: 'scoreboard_update', scores });
+  }
 }
 
 function onStartQuestion(
@@ -120,13 +157,22 @@ function onStartQuestion(
   const { session, connections, questions } = ctx;
   const q = questions.get(msg.questionId);
   if (!q) return;
-  session.startQuestion(msg.questionId, msg.timeoutSec, (remaining) => {
-    broadcastRole(connections, ['present'], { type: 'timer_tick', remaining });
-  });
+  session.startQuestion(
+    msg.questionId,
+    msg.timeoutSec,
+    (remaining) => {
+      broadcastRole(connections, ['present'], { type: 'timer_tick', remaining });
+    },
+    () => {
+      endQuestionAndBroadcast(hostWs(connections), ctx);
+    },
+  );
   broadcastRole(connections, ['student', 'present'], {
     type: 'question_started',
     questionId: q.id,
     code: q.code,
+    questionType: q.type ?? 'input',
+    options: q.options,
     timeoutSec: msg.timeoutSec,
     startedAt: session.activeQuestion!.startedAt,
   });
@@ -145,9 +191,23 @@ function onSubmitAnswer(
     return;
   }
   const q = questions.get(session.activeQuestion.id);
-  const normalized = normalize(msg.answer);
-  const correctAnswers = (q?.answers ?? []).map(normalize);
-  const status = session.submitAnswer(info.studentId, normalized, correctAnswers);
+  const qType = q?.type ?? 'input';
+  let studentAnswer: string;
+  let correctAnswers: string[];
+
+  if (qType === 'multiple') {
+    // student sends sorted comma-joined selected options
+    studentAnswer = msg.answer;
+    correctAnswers = [[...(q?.answers ?? [])].sort((a, b) => a.localeCompare(b)).join(',')];
+  } else if (qType === 'single') {
+    studentAnswer = msg.answer;
+    correctAnswers = q?.answers ?? [];
+  } else {
+    studentAnswer = normalize(msg.answer);
+    correctAnswers = (q?.answers ?? []).map(normalize);
+  }
+
+  const status = session.submitAnswer(info.studentId, studentAnswer, correctAnswers);
   if (status === 'rejected') {
     send(ws, { type: 'answer_rejected', reason: 'already submitted' });
     return;
@@ -168,32 +228,7 @@ function onEndQuestion(
   ctx: HandlerCtx,
 ): void {
   if (info.role !== 'host') return;
-  const { session, connections, questions } = ctx;
-  const activeQ = session.activeQuestion;
-  const correctAnswer = activeQ ? (questions.get(activeQ.id)?.answers[0] ?? '') : '';
-  const results = session.endQuestion();
-
-  send(ws, { type: 'round_results', results });
-  for (const r of results) {
-    const record = session.students.get(r.studentId);
-    if (record) {
-      send(record.ws, {
-        type: 'round_result',
-        correct: r.correct,
-        correctAnswer,
-        points: r.correct ? 1 : 0,
-        totalPoints: record.points,
-      });
-    }
-  }
-  broadcastRole(connections, ['present'], {
-    type: 'question_ended',
-    questionId: activeQ?.id ?? '',
-    correctAnswer,
-  });
-  const scores = session.scoreboard();
-  broadcastRole(connections, ['student', 'present'], { type: 'leaderboard', scores });
-  send(ws, { type: 'scoreboard_update', scores });
+  endQuestionAndBroadcast(ws, ctx);
 }
 
 function onOverrideScore(
@@ -235,7 +270,22 @@ function onChatToStudent(
   if (target) send(target.ws, { type: 'chat_from_host', text: msg.text });
 }
 
-// ── Dispatcher ────────────────────────────────────────────────────────────────
+function onPreviewQuestion(
+  msg: Extract<ClientToServerMsg, { type: 'preview_question' }>,
+  info: ConnectionInfo,
+  ctx: HandlerCtx,
+): void {
+  if (info.role !== 'host') return;
+  const q = ctx.questions.get(msg.questionId);
+  if (!q) return;
+  broadcastRole(ctx.connections, ['present'], {
+    type: 'question_started',
+    questionId: q.id,
+    code: q.code,
+    timeoutSec: 0,
+    startedAt: Date.now(),
+  });
+}
 
 export function handleMessage(ws: WebSocket, raw: RawData, ctx: HandlerCtx): void {
   const info = ctx.connections.get(ws);
@@ -249,13 +299,14 @@ export function handleMessage(ws: WebSocket, raw: RawData, ctx: HandlerCtx): voi
   }
 
   switch (msg.type) {
-    case 'student_join':    return onStudentJoin(ws, msg, info, ctx);
-    case 'host_auth':       return onHostAuth(ws, msg, info);
-    case 'start_question':  return onStartQuestion(msg, info, ctx);
-    case 'submit_answer':   return onSubmitAnswer(ws, msg, info, ctx);
-    case 'end_question':    return onEndQuestion(ws, info, ctx);
-    case 'override_score':  return onOverrideScore(ws, msg, info, ctx);
-    case 'chat_to_host':    return onChatToHost(msg, info, ctx);
-    case 'chat_to_student': return onChatToStudent(msg, info, ctx);
+    case 'student_join':     return onStudentJoin(ws, msg, info, ctx);
+    case 'host_auth':        return onHostAuth(ws, msg, info, ctx);
+    case 'start_question':   return onStartQuestion(msg, info, ctx);
+    case 'submit_answer':    return onSubmitAnswer(ws, msg, info, ctx);
+    case 'end_question':     return onEndQuestion(ws, info, ctx);
+    case 'override_score':   return onOverrideScore(ws, msg, info, ctx);
+    case 'chat_to_host':     return onChatToHost(msg, info, ctx);
+    case 'chat_to_student':  return onChatToStudent(msg, info, ctx);
+    case 'preview_question': return onPreviewQuestion(msg, info, ctx);
   }
 }

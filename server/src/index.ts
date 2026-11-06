@@ -18,6 +18,11 @@ const session = new GameSession();
 const questions = loadQuestions('week-09.json');
 const connections = new Map<WebSocket, ConnectionInfo>();
 
+app.use((_req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+});
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });

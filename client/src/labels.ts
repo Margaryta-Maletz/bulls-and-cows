@@ -55,4 +55,7 @@ export const HOST = {
   chatSelectHint:  'Выберите студента',
   chatOwn:         'Вы',
   unreadBadge:     'новых',
+  timeLabel:       'Время (сек):',
+  cardAnswered:    ' / ',
+  cardCorrect:     ' верных',
 } as const;

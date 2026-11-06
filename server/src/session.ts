@@ -57,6 +57,7 @@ export class GameSession {
     questionId: string,
     timeoutSec: number,
     onTick: (remaining: number) => void,
+    onTimeout: () => void,
   ): void {
     this.clearTimer();
     this.activeQuestion = { id: questionId, startedAt: Date.now(), timeoutSec };
@@ -65,7 +66,10 @@ export class GameSession {
     this.tickTimer = setInterval(() => {
       remaining -= 1;
       onTick(remaining);
-      if (remaining <= 0) this.clearTimer();
+      if (remaining <= 0) {
+        this.clearTimer();
+        onTimeout();
+      }
     }, 1000);
   }
 

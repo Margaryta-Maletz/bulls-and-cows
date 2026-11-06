@@ -1,9 +1,13 @@
 export type Role = 'student' | 'host' | 'present';
 
+export type QuestionType = 'input' | 'single' | 'multiple';
+
 export interface Question {
   id: string;
   code: string;
-  answers: string[];
+  type?: QuestionType;   // default: 'input'
+  answers: string[];     // correct answers; for multiple — individual correct options
+  options?: string[];    // for single/multiple: all 4 displayed options
 }
 
 export interface Score {
@@ -63,12 +67,18 @@ export interface ChatToStudentMsg {
   text: string;
 }
 
+export interface PreviewQuestionMsg {
+  type: 'preview_question';
+  questionId: string;
+}
+
 export type HostToServerMsg =
   | HostAuthMsg
   | StartQuestionMsg
   | EndQuestionMsg
   | OverrideScoreMsg
-  | ChatToStudentMsg;
+  | ChatToStudentMsg
+  | PreviewQuestionMsg;
 
 // ── Server → Student ──────────────────────────────────────────────────────────
 
@@ -87,6 +97,8 @@ export interface QuestionStartedMsg {
   type: 'question_started';
   questionId: string;
   code: string;
+  questionType: QuestionType;
+  options?: string[];
   timeoutSec: number;
   startedAt: number;
 }

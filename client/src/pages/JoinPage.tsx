@@ -40,15 +40,16 @@ export default function JoinPage() {
   const snippet     = game.questionCode;
   const isAnswering = phase === 'answering' && snippet !== '';
   const isAnswered  = phase === 'answered';
+  const qType       = game.question?.questionType ?? 'input';
+  const options     = game.question?.options;
+  const selOpts     = game.selectedOptions;
+  const onToggle    = game.handleOptionToggle;
 
-  const errEl    = error !== '' && <p className="error">{error}</p>;
-  const msgEl    = <Chat messages={msgs} onSend={onSendMsg} />;
-  const taskEl   = <CodeBlock>{snippet}</CodeBlock>;
-  const nickEl   = <input value={nick} onChange={onNickType} placeholder={nickname} />;
-  const replyEl  = <input value={reply} onChange={onReplyType} placeholder={answerPrompt} disabled={submitting} />;
-  const sendEl   = <button type="submit" disabled={submitting}>{submitBtn}</button>;
+  const errEl  = error !== '' && <p className="error">{error}</p>;
+  const msgEl  = <Chat messages={msgs} onSend={onSendMsg} />;
+  const taskEl = <CodeBlock>{snippet}</CodeBlock>;
+  const nickEl = <input value={nick} onChange={onNickType} placeholder={nickname} />;
 
-  // Forms extracted to neutral-named vars — no wrapping () to avoid cascade
   const f0 = <form onSubmit={onJoin}>
     <h1>{gameTitle}</h1>
     {errEl}
@@ -56,10 +57,35 @@ export default function JoinPage() {
     <button type="submit">{joinBtn}</button>
   </form>;
 
+  const optionsEl = (qType === 'single' || qType === 'multiple') && options ? (
+    <div className="options-list">
+      {options.map(opt => (
+        <label key={opt} className={selOpts.includes(opt) ? 'option-row option-row-selected' : 'option-row'}>
+          <input
+            type={qType === 'single' ? 'radio' : 'checkbox'}
+            name="quiz-option"
+            value={opt}
+            checked={selOpts.includes(opt)}
+            onChange={() => onToggle(opt)}
+            disabled={submitting}
+          />
+          <code>{opt}</code>
+        </label>
+      ))}
+    </div>
+  ) : null;
+
+  const inputEl = qType === 'input'
+    ? <input value={reply} onChange={onReplyType} placeholder={answerPrompt} disabled={submitting} />
+    : null;
+
+  const canSubmit = qType === 'input' ? reply.trim() !== '' : selOpts.length > 0;
+
   const f1 = <form onSubmit={onReply}>
     {errEl}
-    {replyEl}
-    {sendEl}
+    {optionsEl}
+    {inputEl}
+    <button type="submit" disabled={submitting || !canSubmit}>{submitBtn}</button>
   </form>;
 
   return (
