@@ -106,9 +106,13 @@ export function useHostGame(): HostGameApi {
         break;
       case 'student_joined': {
         const joined = { id: lastMessage.id, name: lastMessage.name };
-        setStudents(prev => [...prev, joined]);
-        setStudentCount(n => n + 1);
-        studentCountRef.current++;
+        setStudents(prev => {
+          if (prev.some(s => s.id === joined.id)) return prev;
+          const next = [...prev, joined];
+          setStudentCount(next.length);
+          studentCountRef.current = next.length;
+          return next;
+        });
         break;
       }
       case 'student_answered': {
