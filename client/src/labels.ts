@@ -1,0 +1,58 @@
+export const LABELS = {
+  reconnecting:     'Переподключение...',
+  toastReconnected: 'Подключено',
+  hostName:      'Ведущий',
+  gameTitle:     'Войти в игру',
+  nickname:      'Никнейм',
+  joinBtn:       'Войти',
+  waiting:       'Ожидаем вопрос...',
+  answerPrompt:  'Что выведет консоль?',
+  submitBtn:     'Отправить',
+  waitingResult: 'Ответ принят, ждём результатов...',
+  correct:       'Верно!',
+  incorrect:     'Неверно!',
+  rightAnswer:   'Правильный ответ: ',
+  totalPoints:   'Всего очков: ',
+  chatMyAnswer:     'Мой ответ: ',
+  chatRightAnswer:  'Правильный: ',
+  chatTotalPoints:  ' · Итого: ',
+  chatPoints:       ' очков',
+  chatSystem:       'Результат',
+} as const;
+
+export const CHAT = {
+  placeholder: 'Сообщение...',
+  sendBtn:     'Отправить',
+} as const;
+
+export const PRESENT = {
+  reconnecting: 'Переподключение...',
+  waiting:      'Ожидаем вопрос...',
+  answered:     'Ответили: ',
+  separator:    ' / ',
+  rightAnswer:  'Правильный ответ:',
+} as const;
+
+export const HOST = {
+  reconnecting:    'Переподключение...',
+  title:           'Ведущий',
+  tokenHint:       'Токен ведущего',
+  loginBtn:        'Войти',
+  questionPrefix:  'Вопрос: ',
+  answeredPrefix:  'Ответили: ',
+  separator:       ' / ',
+  endRound:        'Завершить раунд',
+  panelTitle:      'Панель ведущего',
+  studentsPrefix:  'Студентов в сессии: ',
+  roundResults:    'Результаты раунда',
+  resultCorrect:   ' — верно',
+  resultWrong:     ' — неверно',
+  addPoint:        '+1',
+  removePoint:     '−1',
+  startQuestion:   'Запустить вопрос',
+  fileLabel:       'Файл: ',
+  chatTitle:       'Чат',
+  chatSelectHint:  'Выберите студента',
+  chatOwn:         'Вы',
+  unreadBadge:     'новых',
+} as const;

@@ -1,0 +1,212 @@
+[
+  {
+    "id": "w09-01",
+    "code": "let base = 100;\nconst addBase = (n) => n + base;\nconst a = addBase(5);\nbase = 200;\nconst b = addBase(5);\nconsole.log(a, b);",
+    "answers": [
+      "105 205"
+    ]
+  },
+  {
+    "id": "w09-02",
+    "code": "const nums = [1, 2, 3, 4, 5];\nconst a = nums.slice(1, 3);\nconst b = nums.splice(1, 2);\nconsole.log(nums.length, a, b);",
+    "answers": [
+      "3 [2, 3] [2, 3]"
+    ]
+  },
+  {
+    "id": "w09-03",
+    "code": "const doubled = [1, 2, 3].forEach(x => x * 2);\nconst mapped  = [1, 2, 3].map(x => x * 2);\nconsole.log(doubled, mapped);",
+    "answers": [
+      "undefined [2, 4, 6]"
+    ]
+  },
+  {
+    "id": "w09-04",
+    "code": "const update = (obj, key, val) => { obj[key] = val; return obj; };\nconst config = { debug: false };\nconst next = update(config, 'debug', true);\nconsole.log(config.debug, next === config);",
+    "answers": [
+      "true true"
+    ]
+  },
+  {
+    "id": "w09-05",
+    "code": "const withLog = (fn) => (...args) => {\n  const result = fn(...args);\n  console.log('result:', result);\n  return result;\n};\nconst square = withLog(x => x ** 2);\nsquare(3);\nsquare(3);",
+    "answers": [
+      "result: 9\nresult: 9"
+    ]
+  },
+  {
+    "id": "w09-06",
+    "code": "const state = Object.freeze({ tags: ['a', 'b'], count: 0 });\nstate.tags.push('c');\nstate.count = 99;\nconsole.log(state.tags.length, state.count);",
+    "answers": [
+      "3 0"
+    ]
+  },
+  {
+    "id": "w09-07",
+    "code": "const prev = { scores: [1, 2, 3], user: 'Alice' };\nconst next = { ...prev, user: 'Bob' };\nnext.scores.push(99);\nconsole.log(prev.user, prev.scores.length, next.user);",
+    "answers": [
+      "'Alice' 4 'Bob'"
+    ]
+  },
+  {
+    "id": "w09-08",
+    "code": "const a = [3, 1, 2];\nconst sorted = a.sort((x, y) => x - y);\n\nconst b = [3, 1, 2];\nconst copy = [...b].sort((x, y) => x - y);\n\nconsole.log(a === sorted, b[0], copy[0]);",
+    "answers": [
+      "true 3 1"
+    ]
+  },
+  {
+    "id": "w09-09",
+    "code": "const setIn = (obj, [key, ...rest], val) =>\n  rest.length === 0\n    ? { ...obj, [key]: val }\n    : { ...obj, [key]: setIn(obj[key], rest, val) };\n\nconst s = { a: { b: { c: 1 } } };\nconst t = setIn(s, ['a', 'b', 'c'], 42);\nconsole.log(s.a.b.c, t.a.b.c, s === t, s.a === t.a);",
+    "answers": [
+      "1 42 false false"
+    ]
+  },
+  {
+    "id": "w09-10",
+    "code": "const obj  = Object.freeze({ x: 1, nested: { y: 2 } });\nconst copy = Object.assign({}, obj);\ncopy.x = 99;\ncopy.nested.y = 99;\nconsole.log(obj.x, obj.nested.y, copy.x);",
+    "answers": [
+      "1 99 99"
+    ]
+  },
+  {
+    "id": "w09-11",
+    "code": "console.log(['4', '8', '16'].map(parseInt));",
+    "answers": [
+      "[4, NaN, 1]"
+    ]
+  },
+  {
+    "id": "w09-12",
+    "code": "const result = [42].reduce((acc, x) => {\n  console.log('called');\n  return acc + x;\n});\nconsole.log('done:', result);",
+    "answers": [
+      "done: 42"
+    ]
+  },
+  {
+    "id": "w09-13",
+    "code": "const result = [1, 2, 3, 4, 5].reduce((acc, x) => {\n  (x % 2 === 0 ? acc.even : acc.odd).push(x);\n  return acc;\n}, { even: [], odd: [] });\nconsole.log(result.even, result.odd);",
+    "answers": [
+      "[2, 4] [1, 3, 5]"
+    ]
+  },
+  {
+    "id": "w09-14",
+    "code": "const a = [1, 2, 3].map(x => [x, -x]).flat();\nconst b = [1, 2, 3].flatMap(x => [x, -x]);\nconsole.log(a.join(',') === b.join(','), b);",
+    "answers": [
+      "true [1, -1, 2, -2, 3, -3]"
+    ]
+  },
+  {
+    "id": "w09-15",
+    "code": "const map    = fn   => arr => arr.map(fn);\nconst filter = pred => arr => arr.filter(pred);\nconst pipe   = (...fns) => x => fns.reduce((v, f) => f(v), x);\n\nconst process = pipe(\n  filter(x => x > 2),\n  map(x => x * 3)\n);\nconsole.log(process([1, 2, 3, 4]));",
+    "answers": [
+      "[9, 12]"
+    ]
+  },
+  {
+    "id": "w09-16",
+    "code": "const f = (a, b, c = 0) => a + b + c;\nconst g = (...args) => args.length;\nconst h = (a, b, ...rest) => a + b;\nconsole.log(f.length, g.length, h.length);",
+    "answers": [
+      "2 0 2"
+    ]
+  },
+  {
+    "id": "w09-17",
+    "code": "const curry = fn => function c(...a) {\n  return a.length >= fn.length ? fn(...a) : (...b) => c(...a, ...b);\n};\nconst greet = curry((greeting, name) => `${greeting}, ${name}!`);\nconst results = ['Alice', 'Bob', 'Carol'].map(greet('Hi'));\nconsole.log(results);",
+    "answers": [
+      "['Hi, Alice!', 'Hi, Bob!', 'Hi, Carol!']"
+    ]
+  },
+  {
+    "id": "w09-18",
+    "code": "function volume(l, w, h) { return l * w * h; }\nconst plank = volume.bind(null, 10, 5);\nconsole.log(plank(3), plank.length);",
+    "answers": [
+      "150 1"
+    ]
+  },
+  {
+    "id": "w09-19",
+    "code": "const partial = (fn, ...pre) => (...args) => fn(...pre, ...args);\nconst divide  = (a, b) => a / b;\nconst half    = partial(divide, 10);\nconst third   = partial(divide, 15);\nconsole.log(half(2), third(3), half(5));",
+    "answers": [
+      "5 5 2"
+    ]
+  },
+  {
+    "id": "w09-20",
+    "code": "const curry = fn => function c(...a) {\n  return a.length >= fn.length ? fn(...a) : (...b) => c(...a, ...b);\n};\nconst mul       = curry((a, b, c) => a * b * c);\nconst double    = mul(2);\nconst quadruple = mul(2)(2);\nconsole.log(double(3, 4), quadruple(5), mul(2)(3)(4));",
+    "answers": [
+      "24 20 24"
+    ]
+  },
+  {
+    "id": "w09-21",
+    "code": "const flatten = arr =>\n  arr.reduce((acc, x) =>\n    Array.isArray(x) ? [...acc, ...flatten(x)] : [...acc, x], []);\nconsole.log(flatten([1, [2, [3, [4]]]]));",
+    "answers": [
+      "[1, 2, 3, 4]"
+    ]
+  },
+  {
+    "id": "w09-22",
+    "code": "let calls = 0;\nconst fib = n => { calls++; return n <= 1 ? n : fib(n - 1) + fib(n - 2); };\nfib(6);\nconsole.log(calls);",
+    "answers": [
+      "25"
+    ]
+  },
+  {
+    "id": "w09-23",
+    "code": "const isEven = n => n === 0 ? true  : isOdd(n - 1);\nconst isOdd  = n => n === 0 ? false : isEven(n - 1);\nconsole.log(isEven(6), isOdd(7), isEven(1));",
+    "answers": [
+      "true true false"
+    ]
+  },
+  {
+    "id": "w09-24",
+    "code": "const factorial = (n, acc = 1) => n <= 1 ? acc : factorial(n - 1, n * acc);\nconsole.log(factorial(5), factorial(4));",
+    "answers": [
+      "120 24"
+    ]
+  },
+  {
+    "id": "w09-25",
+    "code": "const deepCount = arr =>\n  arr.reduce((acc, x) => acc + (Array.isArray(x) ? deepCount(x) : 1), 0);\nconsole.log(deepCount([1, [2, 3], [4, [5, 6]]]));",
+    "answers": [
+      "6"
+    ]
+  },
+  {
+    "id": "w09-26",
+    "code": "let count = 0;\nconst memo = fn => {\n  const cache = new Map();\n  return x => cache.has(x) ? cache.get(x) : (cache.set(x, fn(x)), cache.get(x));\n};\nconst sq = memo(x => { count++; return x * x; });\nsq(3); sq(4); sq(3); sq(4); sq(5);\nconsole.log(count);",
+    "answers": [
+      "3"
+    ]
+  },
+  {
+    "id": "w09-27",
+    "code": "const memo = fn => {\n  const cache = new Map();\n  return x => cache.has(x) ? cache.get(x) : (cache.set(x, fn(x)), cache.get(x));\n};\nlet calls = 0;\nconst fn = memo(obj => { calls++; return obj.n * 2; });\nconst obj = { n: 5 };\nfn(obj);\nfn(obj);\nfn({ n: 5 });\nconsole.log(calls);",
+    "answers": [
+      "2"
+    ]
+  },
+  {
+    "id": "w09-28",
+    "code": "let factor = 1;\nconst memo   = fn => { const c = {}; return x => x in c ? c[x] : (c[x] = fn(x)); };\nconst scaled = memo(x => x * factor);\nconsole.log(scaled(5));\nfactor = 10;\nconsole.log(scaled(5));\nconsole.log(scaled(6));",
+    "answers": [
+      "5\n5\n60"
+    ]
+  },
+  {
+    "id": "w09-29",
+    "code": "const memo = fn => {\n  const cache = new Map();\n  return function memoized(n) {\n    if (cache.has(n)) return cache.get(n);\n    const r = fn(n);\n    cache.set(n, r);\n    return r;\n  };\n};\nlet calls = 0;\nconst fib = memo(n => { calls++; return n <= 1 ? n : fib(n - 1) + fib(n - 2); });\nconsole.log(fib(5));\nconsole.log(calls);",
+    "answers": [
+      "5\n6"
+    ]
+  },
+  {
+    "id": "w09-30",
+    "code": "function makeCounter(start = 0) {\n  let n = start;\n  return { inc: () => ++n, dec: () => --n, val: () => n };\n}\nconst c1 = makeCounter(10);\nconst c2 = makeCounter();\nc1.inc(); c1.inc(); c2.inc();\nconsole.log(c1.val(), c2.val());",
+    "answers": [
+      "12 1"
+    ]
+  }
+]
