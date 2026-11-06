@@ -9,6 +9,8 @@
   "scripts": {
     "dev:server": "cd server && npx tsx watch --env-file=.env src/index.ts",
     "dev:client": "cd client && npm run dev",
-    "md-to-json": "npx tsx scripts/md-to-json.ts"
+    "md-to-json": "npx tsx scripts/md-to-json.ts",
+    "ngrok": "ngrok http 3000",
+    "deploy": "gh workflow run deploy.yml -f"
   }
 }
