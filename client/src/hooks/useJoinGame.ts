@@ -66,7 +66,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         phase: 'answering',
         error: '',
         isSubmitting: false,
-        question: { id: action.questionId, code: action.code, questionType: action.questionType, options: action.options ? shuffle(action.options) : undefined },
+        question: { id: action.questionId, code: action.code, questionType: action.questionType ?? 'input', options: action.options ? shuffle(action.options) : undefined },
         chatMsgs: [...state.chatMsgs, {
           id: String(++msgSeq),
           from: action.questionId,
