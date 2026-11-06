@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Question, Score, ServerToHostMsg, StudentRoundResult } from '@ws-quiz/shared';
-import { useSocket, wsUrl } from './useSocket.ts';
+import { useSocket, wsUrl, apiUrl } from './useSocket.ts';
 import type { ChatMsg } from '../components/Chat.tsx';
 import { HOST } from '../labels.ts';
 
-type Phase       = 'auth' | 'ready' | 'running' | 'ended';
-type FormSubmit  = { preventDefault(): void };
+type Phase      = 'auth' | 'ready';
+type FormSubmit = { preventDefault(): void };
 type InputChange = { currentTarget: { value: string } };
 
 export interface Student {
@@ -14,6 +14,13 @@ export interface Student {
 }
 
 export type HostChatMsg = ChatMsg & { readonly studentId: string };
+
+export interface QuestionStat {
+  status: 'idle' | 'active' | 'ended';
+  answeredCount: number;
+  totalStudents: number;
+  correctCount: number;
+}
 
 let chatSeq = 0;
 
@@ -24,13 +31,11 @@ export interface HostGameApi {
   questionFiles: string[];
   questionFile: string;
   questions: Question[];
-  selectedId: string;
-  activeId: string;
   timeoutSec: number;
+  activeId: string;
   students: Student[];
   studentCount: number;
-  answeredCount: number;
-  results: StudentRoundResult[];
+  questionStats: Record<string, QuestionStat>;
   scores: Score[];
   hostChats: HostChatMsg[];
   chatStudentId: string;
@@ -38,12 +43,11 @@ export interface HostGameApi {
   status: 'connecting' | 'open' | 'closed';
   reconnected: boolean;
   handleAuth: (e: FormSubmit) => void;
-  handleStart: (e: FormSubmit) => void;
-  handleEnd: () => void;
   handleTokenChange: (e: InputChange) => void;
-  handleSelectChange: (e: InputChange) => void;
   handleTimeoutChange: (e: InputChange) => void;
   handleFileChange: (e: InputChange) => void;
+  handleCardClick: (questionId: string) => void;
+  handleReset: () => void;
   handleOverride: (studentId: string, correct: boolean) => () => void;
   handleChatStudentChange: (e: InputChange) => void;
   handleHostChatSend: (text: string) => void;
@@ -58,27 +62,31 @@ export function useHostGame(): HostGameApi {
   const [questionFiles, setQuestionFiles] = useState<string[]>([]);
   const [questionFile, setQuestionFile] = useState('');
   const [questions, setQuestions]       = useState<Question[]>([]);
-  const [selectedId, setSelectedId]     = useState('');
-  const [activeId, setActiveId]         = useState('');
   const [timeoutSec, setTimeoutSec]     = useState(60);
+  const [activeId, setActiveId]         = useState('');
   const [students, setStudents]         = useState<Student[]>([]);
   const [studentCount, setStudentCount] = useState(0);
-  const [answeredCount, setAnsweredCount] = useState(0);
-  const [results, setResults]           = useState<StudentRoundResult[]>([]);
+  const [questionStats, setQuestionStats] = useState<Record<string, QuestionStat>>({});
   const [scores, setScores]             = useState<Score[]>([]);
   const [hostChats, setHostChats]       = useState<HostChatMsg[]>([]);
   const [chatStudentId, setChatStudentId] = useState('');
   const [unreadCount, setUnreadCount]   = useState(0);
 
+  const activeIdRef     = useRef('');
+  const endingIdRef     = useRef('');
+  const studentCountRef = useRef(0);
+
+  const updateActiveId = useCallback((id: string) => {
+    setActiveId(id);
+    activeIdRef.current = id;
+  }, []);
+
   const loadFile = useCallback((filename: string) => {
     setQuestionFile(filename);
-    fetch('/questions/' + filename)
+    fetch(apiUrl('/questions/' + filename))
       .then(r => r.json() as Promise<Question[]>)
-      .then(qs => {
-        setQuestions(qs);
-        if (qs.length > 0) setSelectedId(qs[0].id);
-      })
-      .catch(() => { /* no questions */ });
+      .then(qs => { setQuestions(qs); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -87,7 +95,7 @@ export function useHostGame(): HostGameApi {
       case 'auth_success':
         setPhase('ready');
         setAuthError('');
-        fetch('/questions/index.json')
+        fetch(apiUrl('/questions/index.json'))
           .then(r => r.json() as Promise<string[]>)
           .then(files => { setQuestionFiles(files); loadFile(files[0] ?? 'week-09.json'); })
           .catch(() => { loadFile('week-09.json'); });
@@ -98,17 +106,44 @@ export function useHostGame(): HostGameApi {
         break;
       case 'student_joined': {
         const joined = { id: lastMessage.id, name: lastMessage.name };
-        setStudents(prev => [...prev, joined]);
-        setStudentCount(n => n + 1);
+        setStudents(prev => {
+          if (prev.some(s => s.id === joined.id)) return prev;
+          const next = [...prev, joined];
+          setStudentCount(next.length);
+          studentCountRef.current = next.length;
+          return next;
+        });
         break;
       }
-      case 'student_answered':
-        setAnsweredCount(n => n + 1);
+      case 'student_answered': {
+        const qId = activeIdRef.current;
+        if (qId) {
+          setQuestionStats(prev => {
+            const cur = prev[qId] ?? { status: 'active' as const, answeredCount: 0, totalStudents: 0, correctCount: 0 };
+            return { ...prev, [qId]: { ...cur, answeredCount: cur.answeredCount + 1 } };
+          });
+        }
         break;
-      case 'round_results':
-        setResults(lastMessage.results);
-        setPhase('ended');
+      }
+      case 'round_results': {
+        const endedId = endingIdRef.current || activeIdRef.current;
+        endingIdRef.current = '';
+        if (activeIdRef.current === endedId) updateActiveId('');
+        if (endedId) {
+          const results = lastMessage.results;
+          const correct = results.filter((r: StudentRoundResult) => r.correct).length;
+          setQuestionStats(prev => ({
+            ...prev,
+            [endedId]: {
+              status: 'ended',
+              answeredCount: results.length,
+              totalStudents: studentCountRef.current,
+              correctCount: correct,
+            },
+          }));
+        }
         break;
+      }
       case 'scoreboard_update':
         setScores(lastMessage.scores);
         break;
@@ -125,31 +160,61 @@ export function useHostGame(): HostGameApi {
         break;
       }
     }
-  }, [lastMessage, loadFile]);
+  }, [lastMessage, loadFile, updateActiveId]);
 
-  const handleAuth  = useCallback((e: FormSubmit) => {
+  const handleAuth = useCallback((e: FormSubmit) => {
     e.preventDefault();
     send({ type: 'host_auth', token: tokenInput });
   }, [tokenInput, send]);
 
-  const handleStart = useCallback((e: FormSubmit) => {
-    e.preventDefault();
-    if (!selectedId) return;
-    setActiveId(selectedId);
-    setAnsweredCount(0);
-    setResults([]);
-    send({ type: 'start_question', questionId: selectedId, timeoutSec });
-    setPhase('running');
-  }, [selectedId, timeoutSec, send]);
-
-  const handleEnd   = useCallback(() => {
-    send({ type: 'end_question', questionId: activeId });
-  }, [activeId, send]);
-
   const handleTokenChange   = useCallback((e: InputChange) => { setTokenInput(e.currentTarget.value); }, []);
-  const handleSelectChange  = useCallback((e: InputChange) => { setSelectedId(e.currentTarget.value); }, []);
   const handleTimeoutChange = useCallback((e: InputChange) => { setTimeoutSec(Number(e.currentTarget.value)); }, []);
   const handleFileChange    = useCallback((e: InputChange) => { loadFile(e.currentTarget.value); }, [loadFile]);
+
+  const handleCardClick = useCallback((questionId: string) => {
+    const stat = questionStats[questionId];
+
+    if (stat?.status === 'ended') {
+      send({ type: 'preview_question', questionId });
+      return;
+    }
+
+    if (stat?.status === 'active') {
+      endingIdRef.current = questionId;
+      updateActiveId('');
+      send({ type: 'end_question', questionId });
+      return;
+    }
+
+    // idle → start (possibly ending current active first)
+    const currentActive = activeIdRef.current;
+    if (currentActive) {
+      endingIdRef.current = currentActive;
+      send({ type: 'end_question', questionId: currentActive });
+    }
+
+    updateActiveId(questionId);
+    setQuestionStats(prev => ({
+      ...prev,
+      [questionId]: {
+        status: 'active',
+        answeredCount: 0,
+        totalStudents: studentCountRef.current,
+        correctCount: 0,
+      },
+    }));
+    send({ type: 'start_question', questionId, timeoutSec });
+  }, [questionStats, timeoutSec, send, updateActiveId]);
+
+  const handleReset = useCallback(() => {
+    send({ type: 'reset_session' });
+    setStudents([]);
+    setStudentCount(0);
+    studentCountRef.current = 0;
+    setScores([]);
+    setQuestionStats({});
+    updateActiveId('');
+  }, [send, updateActiveId]);
 
   const handleOverride = useCallback((studentId: string, correct: boolean) => () => {
     send({ type: 'override_score', studentId, correct });
@@ -163,23 +228,21 @@ export function useHostGame(): HostGameApi {
   const handleHostChatSend = useCallback((text: string) => {
     if (!chatStudentId) return;
     send({ type: 'chat_to_student', studentId: chatStudentId, text });
-    const ownMsg: HostChatMsg = {
+    setHostChats(prev => [...prev, {
       id: String(++chatSeq),
       from: HOST.chatOwn,
       text,
       own: true,
       studentId: chatStudentId,
-    };
-    setHostChats(prev => [...prev, ownMsg]);
+    }]);
   }, [send, chatStudentId]);
 
   return {
     phase, tokenInput, authError, questionFiles, questionFile,
-    questions, selectedId, activeId, timeoutSec,
-    students, studentCount, answeredCount, results, scores,
+    questions, timeoutSec, activeId,
+    students, studentCount, questionStats, scores,
     hostChats, chatStudentId, unreadCount, status, reconnected,
-    handleAuth, handleStart, handleEnd,
-    handleTokenChange, handleSelectChange, handleTimeoutChange, handleFileChange,
-    handleOverride, handleChatStudentChange, handleHostChatSend,
+    handleAuth, handleTokenChange, handleTimeoutChange, handleFileChange,
+    handleCardClick, handleReset, handleOverride, handleChatStudentChange, handleHostChatSend,
   };
 }

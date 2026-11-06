@@ -1,9 +1,14 @@
 export type Role = 'student' | 'host' | 'present';
 
+export type QuestionType = 'input' | 'single' | 'multiple';
+
 export interface Question {
   id: string;
   code: string;
-  answers: string[];
+  type?: QuestionType;   // default: 'input'
+  answers: string[];     // correct answers; for multiple — individual correct options
+  options?: string[];    // for single/multiple: all 4 displayed options
+  comment?: string;      // подсказка для ведущего, не показывается студентам
 }
 
 export interface Score {
@@ -63,12 +68,23 @@ export interface ChatToStudentMsg {
   text: string;
 }
 
+export interface PreviewQuestionMsg {
+  type: 'preview_question';
+  questionId: string;
+}
+
+export interface ResetSessionMsg {
+  type: 'reset_session';
+}
+
 export type HostToServerMsg =
   | HostAuthMsg
   | StartQuestionMsg
   | EndQuestionMsg
   | OverrideScoreMsg
-  | ChatToStudentMsg;
+  | ChatToStudentMsg
+  | PreviewQuestionMsg
+  | ResetSessionMsg;
 
 // ── Server → Student ──────────────────────────────────────────────────────────
 
@@ -87,6 +103,8 @@ export interface QuestionStartedMsg {
   type: 'question_started';
   questionId: string;
   code: string;
+  questionType?: QuestionType;
+  options?: string[];
   timeoutSec: number;
   startedAt: number;
 }
@@ -118,6 +136,10 @@ export interface ChatFromHostMsg {
   text: string;
 }
 
+export interface SessionResetMsg {
+  type: 'session_reset';
+}
+
 export type ServerToStudentMsg =
   | WelcomeMsg
   | JoinFailedMsg
@@ -126,7 +148,8 @@ export type ServerToStudentMsg =
   | AnswerRejectedMsg
   | RoundResultMsg
   | LeaderboardMsg
-  | ChatFromHostMsg;
+  | ChatFromHostMsg
+  | SessionResetMsg;
 
 // ── Server → Host ─────────────────────────────────────────────────────────────
 

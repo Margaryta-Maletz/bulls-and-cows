@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { WebSocket } from 'ws';
+import { WebSocket } from 'ws';
 import type { Score, StudentRoundResult } from '@ws-quiz/shared';
 
 interface StudentRecord {
@@ -34,6 +34,12 @@ export class GameSession {
     name: string,
   ): { studentId: string; reconnectToken: string } | { error: string } {
     if (this.byName.has(name)) {
+      const existingId = this.byName.get(name)!;
+      const existing   = this.students.get(existingId)!;
+      if (existing.ws.readyState === WebSocket.CLOSED) {
+        existing.ws = ws;
+        return { studentId: existingId, reconnectToken: existing.reconnectToken };
+      }
       return { error: 'name taken' };
     }
     const studentId      = randomUUID();
@@ -57,6 +63,7 @@ export class GameSession {
     questionId: string,
     timeoutSec: number,
     onTick: (remaining: number) => void,
+    onTimeout: () => void,
   ): void {
     this.clearTimer();
     this.activeQuestion = { id: questionId, startedAt: Date.now(), timeoutSec };
@@ -65,7 +72,10 @@ export class GameSession {
     this.tickTimer = setInterval(() => {
       remaining -= 1;
       onTick(remaining);
-      if (remaining <= 0) this.clearTimer();
+      if (remaining <= 0) {
+        this.clearTimer();
+        onTimeout();
+      }
     }, 1000);
   }
 
@@ -103,6 +113,15 @@ export class GameSession {
       clearInterval(this.tickTimer);
       this.tickTimer = null;
     }
+  }
+
+  reset(): void {
+    this.clearTimer();
+    this.students.clear();
+    this.byToken.clear();
+    this.byName.clear();
+    this.answers.clear();
+    this.activeQuestion = null;
   }
 
   scoreboard(): Score[] {

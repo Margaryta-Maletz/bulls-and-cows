@@ -1,5 +1,5 @@
 import { useReducer, useState, useEffect, useCallback } from 'react';
-import type { ServerToStudentMsg } from '@ws-quiz/shared';
+import type { ServerToStudentMsg, QuestionType } from '@ws-quiz/shared';
 import { useSocket, wsUrl } from './useSocket.ts';
 import type { ChatMsg } from '../components/Chat.tsx';
 import { LABELS } from '../labels.ts';
@@ -7,11 +7,22 @@ import { LABELS } from '../labels.ts';
 type FormSubmit  = { preventDefault(): void };
 type InputChange = { currentTarget: { value: string } };
 
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export type Phase = 'join' | 'waiting' | 'answering' | 'answered';
 
 export interface ActiveQuestion {
   id: string;
   code: string;
+  questionType: QuestionType;
+  options?: string[];
 }
 
 interface GameState {
@@ -43,6 +54,8 @@ let msgSeq = 0;
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
+    case 'session_reset':
+      return { ...INIT };
     case 'welcome':
       return { ...state, phase: 'waiting', error: '' };
     case 'join_failed':
@@ -53,7 +66,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         phase: 'answering',
         error: '',
         isSubmitting: false,
-        question: { id: action.questionId, code: action.code },
+        question: { id: action.questionId, code: action.code, questionType: action.questionType, options: action.options ? shuffle(action.options) : undefined },
         chatMsgs: [...state.chatMsgs, {
           id: String(++msgSeq),
           from: action.questionId,
@@ -134,12 +147,14 @@ export interface JoinGameApi {
   showBonus: boolean;
   nameInput: string;
   answer: string;
+  selectedOptions: string[];
   status: 'connecting' | 'open' | 'closed';
   reconnected: boolean;
   handleJoin: (e: FormSubmit) => void;
   handleAnswer: (e: FormSubmit) => void;
   handleNameChange: (e: InputChange) => void;
   handleAnswerChange: (e: InputChange) => void;
+  handleOptionToggle: (option: string) => void;
   handleChatSend: (text: string) => void;
   hideBonus: () => void;
 }
@@ -147,9 +162,10 @@ export interface JoinGameApi {
 export function useJoinGame(): JoinGameApi {
   const { send, lastMessage, status, reconnected } = useSocket<ServerToStudentMsg>(wsUrl());
 
-  const [game, dispatch]            = useReducer(gameReducer, INIT);
-  const [nameInput, setNameInput]   = useState('');
-  const [answer, setAnswer]         = useState('');
+  const [game, dispatch]              = useReducer(gameReducer, INIT);
+  const [nameInput, setNameInput]     = useState('');
+  const [answer, setAnswer]           = useState('');
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [studentName, setStudentName] = useState('');
 
   useEffect(() => {
@@ -168,6 +184,7 @@ export function useJoinGame(): JoinGameApi {
     if (lastMessage.type === 'welcome') {
       try { sessionStorage.setItem('reconnectToken', lastMessage.reconnectToken); } catch {}
     }
+    if (lastMessage.type === 'question_started') setSelectedOptions([]);
     dispatch(lastMessage);
   }, [lastMessage]);
 
@@ -182,15 +199,36 @@ export function useJoinGame(): JoinGameApi {
 
   const handleAnswer = useCallback((e: FormSubmit) => {
     e.preventDefault();
-    const trimmedAnswer = answer.trim();
-    if (!game.question || !trimmedAnswer || game.isSubmitting) return;
+    if (!game.question || game.isSubmitting) return;
+    const qType = game.question.questionType;
+
+    let finalAnswer: string;
+    if (qType === 'multiple') {
+      if (selectedOptions.length === 0) return;
+      finalAnswer = [...selectedOptions].sort((a, b) => a.localeCompare(b)).join(',');
+    } else if (qType === 'single') {
+      if (selectedOptions.length === 0) return;
+      finalAnswer = selectedOptions[0];
+    } else {
+      const trimmed = answer.trim();
+      if (!trimmed) return;
+      finalAnswer = trimmed;
+    }
+
     dispatch({ type: 'submit' });
-    dispatch({ type: 'answer_sent', questionId: game.question.id, answer: trimmedAnswer, from: studentName });
-    send({ type: 'submit_answer', questionId: game.question.id, answer: trimmedAnswer });
-  }, [game.question, game.isSubmitting, answer, studentName, send]);
+    dispatch({ type: 'answer_sent', questionId: game.question.id, answer: finalAnswer, from: studentName });
+    send({ type: 'submit_answer', questionId: game.question.id, answer: finalAnswer });
+  }, [game.question, game.isSubmitting, answer, selectedOptions, studentName, send]);
 
   const handleNameChange   = useCallback((e: InputChange) => { setNameInput(e.currentTarget.value); }, []);
   const handleAnswerChange = useCallback((e: InputChange) => { setAnswer(e.currentTarget.value); }, []);
+
+  const handleOptionToggle = useCallback((option: string) => {
+    setSelectedOptions(prev => {
+      if (game.question?.questionType === 'single') return [option];
+      return prev.includes(option) ? prev.filter(o => o !== option) : [...prev, option];
+    });
+  }, [game.question?.questionType]);
 
   const handleChatSend = useCallback((text: string) => {
     send({ type: 'chat_to_host', text });
@@ -203,7 +241,8 @@ export function useJoinGame(): JoinGameApi {
   return {
     phase, error, question, questionCode: question !== null ? question.code : '',
     isSubmitting, chatMsgs, showBonus,
-    nameInput, answer, status, reconnected,
-    handleJoin, handleAnswer, handleNameChange, handleAnswerChange, handleChatSend, hideBonus,
+    nameInput, answer, selectedOptions, status, reconnected,
+    handleJoin, handleAnswer, handleNameChange, handleAnswerChange,
+    handleOptionToggle, handleChatSend, hideBonus,
   };
 }

@@ -83,8 +83,21 @@ export function useSocket<TIn>(url: string): UseSocketResult<TIn> {
 /** WebSocket URL: env в проде, автоопределение через proxy в dev */
 export function wsUrl(role?: 'present'): string {
   const base = import.meta.env.VITE_WS_URL as string | undefined;
-  if (base) return role ? `${base}?role=${role}` : base;
+  if (base) {
+    const url = `${base.replace(/\/$/, '')}/ws`;
+    return role ? `${url}?role=${role}` : url;
+  }
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const path  = role ? `/ws?role=${role}` : '/ws';
   return `${proto}//${location.host}${path}`;
+}
+
+/** HTTP URL для API: в проде берёт хост из VITE_WS_URL, в dev — относительный (proxy) */
+export function apiUrl(path: string): string {
+  const base = import.meta.env.VITE_WS_URL as string | undefined;
+  if (base) {
+    const httpBase = base.replace(/\/$/, '').replace(/^wss?:\/\//, 'https://');
+    return `${httpBase}${path}`;
+  }
+  return path;
 }
