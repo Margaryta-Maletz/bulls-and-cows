@@ -434,6 +434,25 @@ li {
   padding: 0 14px;
 }
 
+/* ── Badge (unread counter) ───────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  margin-left: 8px;
+  box-sizing: border-box;
+}
+
 /* ── Reconnect toast ──────────────────────────────────────────── */
 
 .toast {

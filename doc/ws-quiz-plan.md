@@ -223,79 +223,79 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 ### Phase 1 — Фундамент (~3–4 ч)
 
 #### 1.1 Монорепо + скелет проекта (~20 мин)
-- [ ] `../package.json` в корне с `workspaces: ["server", "client", "shared"]`
-- [ ] `../shared/package.json` + `shared/types.ts` — пустой файл с заглушками типов
-- [ ] `../server/package.json` + `tsconfig.json` + зависимости (`express`, `ws`, `tsx`)
-- [ ] `../client` — `npm create vite@latest` с React + TypeScript
-- [ ] `.env.example` для сервера (`HOST_TOKEN=`)
+- [x] `../package.json` в корне с `workspaces: ["server", "client", "shared"]`
+- [x] `../shared/package.json` + `shared/types.ts` — пустой файл с заглушками типов
+- [x] `../server/package.json` + `tsconfig.json` + зависимости (`express`, `ws`, `tsx`)
+- [x] `../client` — `npm create vite@latest` с React + TypeScript
+- [x] `.env.example` для сервера (`HOST_TOKEN=`)
 
 #### 1.2 Shared types (~15 мин)
-- [ ] `Role`: `"student" | "host" | "present"`
-- [ ] `Question`: `{ id, code, answers[] }`
-- [ ] `Score`: `{ studentId, name, points }`
-- [ ] Все типы событий Student→Server, Host→Server, Server→Client (см. таблицы выше)
-- [ ] Экспортировать из одного `index.ts`
+- [x] `Role`: `"student" | "host" | "present"`
+- [x] `Question`: `{ id, code, answers[] }`
+- [x] `Score`: `{ studentId, name, points }`
+- [x] Все типы событий Student→Server, Host→Server, Server→Client (см. таблицы выше)
+- [x] Экспортировать из одного `index.ts`
 
 #### 1.3 Express + WebSocket сервер (~20 мин)
-- [ ] `server/src/index.ts`: Express слушает порт 3000
-- [ ] `ws.Server({ server })` — WS поверх того же HTTP-сервера
-- [ ] Маршрут `GET /health` возвращает `{ ok: true }`
-- [ ] При WS `connect` — логировать в консоль, при `disconnect` — тоже
-- [ ] Проверить: `curl localhost:3000/health` отвечает
+- [x] `server/src/index.ts`: Express слушает порт 3000
+- [x] `ws.Server({ server })` — WS поверх того же HTTP-сервера
+- [x] Маршрут `GET /health` возвращает `{ ok: true }`
+- [x] При WS `connect` — логировать в консоль, при `disconnect` — тоже
+- [x] Проверить: `curl localhost:3000/health` отвечает
 
 #### 1.4 GameSession — структура данных (~25 мин)
-- [ ] `server/src/session.ts`: класс `GameSession`
-- [ ] `students: Map<studentId, { name, points, reconnectToken, ws }>`
-- [ ] `activeQuestion: { id, startedAt, timeoutSec } | null`
-- [ ] `answers: Map<studentId, { answer, correct }>` для текущего раунда
-- [ ] Методы: `joinStudent`, `rejoinStudent`, `startQuestion`, `submitAnswer`, `endQuestion`
+- [x] `server/src/session.ts`: класс `GameSession`
+- [x] `students: Map<studentId, { name, points, reconnectToken, ws }>`
+- [x] `activeQuestion: { id, startedAt, timeoutSec } | null`
+- [x] `answers: Map<studentId, { answer, correct }>` для текущего раунда
+- [x] Методы: `joinStudent`, `rejoinStudent`, `startQuestion`, `submitAnswer`, `endQuestion`
 
 #### 1.5 WS-обработчики сервера (~30 мин)
-- [ ] `server/src/handlers.ts`: `handleMessage(ws, raw, session)` — switch по `type`
-- [ ] `student_join` → `welcome` (новый) или `join_failed` (имя занято)
-- [ ] `student_join` с `reconnectToken` → восстановить очки
-- [ ] `host_auth` → `auth_success` / `auth_failed`
-- [ ] `start_question` → broadcast `question_started` всем студентам и present
-- [ ] `submit_answer` → `answer_received` или `answer_rejected`
+- [x] `server/src/handlers.ts`: `handleMessage(ws, raw, session)` — switch по `type`
+- [x] `student_join` → `welcome` (новый) или `join_failed` (имя занято)
+- [x] `student_join` с `reconnectToken` → восстановить очки
+- [x] `host_auth` → `auth_success` / `auth_failed`
+- [x] `start_question` → broadcast `question_started` всем студентам и present
+- [x] `submit_answer` → `answer_received` или `answer_rejected`
 
 #### 1.6 Авто-scoring + normalizer (~20 мин)
-- [ ] `server/src/normalizer.ts`: цепочка `.trim → .toLowerCase → пробелы → parseFloat`
-- [ ] В `submitAnswer`: нормализовать ответ и сравнить с `question.answers`
-- [ ] По окончании вопроса: начислить очки, отправить `round_result` студентам и `round_results` ведущему
+- [x] `server/src/normalizer.ts`: цепочка `.trim → .toLowerCase → пробелы → parseFloat`
+- [x] В `submitAnswer`: нормализовать ответ и сравнить с `question.answers`
+- [x] По окончании вопроса: начислить очки, отправить `round_result` студентам и `round_results` ведущему
 
 #### 1.7 Конвертер задач (~20 мин)
-- [ ] `scripts/md-to-json.ts`: читает `.md`, парсит блоки с кодом и ответами
-- [ ] Сохраняет в `questions/week-XX.json` в формате `Question[]`
-- [ ] Добавить минимум 3 вопроса вручную в `questions/week-09.json` для тестирования
+- [x] `scripts/md-to-json.ts`: читает `.md`, парсит блоки с кодом и ответами
+- [x] Сохраняет в `questions/week-XX.json` в формате `Question[]`
+- [x] Добавить минимум 3 вопроса вручную в `questions/week-09.json` для тестирования
 
 #### 1.8 useSocket hook (~20 мин)
-- [ ] `client/src/hooks/useSocket.ts`: `new WebSocket(url)`
-- [ ] Отправлять/принимать JSON-сообщения
-- [ ] При `close` — переподключаться через 2 с, передавать `reconnectToken` из `sessionStorage`
-- [ ] Экспортировать `send(msg)` и `lastMessage`
+- [x] `client/src/hooks/useSocket.ts`: `new WebSocket(url)`
+- [x] Отправлять/принимать JSON-сообщения
+- [x] При `close` — переподключаться через 2 с, передавать `reconnectToken` из `sessionStorage`
+- [x] Экспортировать `send(msg)` и `lastMessage`
 
 #### 1.9 JoinPage (~30 мин)
-- [ ] Шаг 1 — форма с полем «никнейм», отправка `student_join`
-- [ ] Шаг 2 — «Ожидаем вопрос...» пока нет `question_started`
-- [ ] Шаг 3 — поле ввода ответа + кнопка Submit → `submit_answer`
-- [ ] Шаг 4 — показать `round_result` (правильно/нет, очки)
-- [ ] Обработать `join_failed` — показать сообщение об ошибке
+- [x] Шаг 1 — форма с полем «никнейм», отправка `student_join`
+- [x] Шаг 2 — «Ожидаем вопрос...» пока нет `question_started`
+- [x] Шаг 3 — поле ввода ответа + кнопка Submit → `submit_answer`
+- [x] Шаг 4 — показать `round_result` (правильно/нет, очки)
+- [x] Обработать `join_failed` — показать сообщение об ошибке
 
 #### 1.10 HostPage (минимальный) (~25 мин)
-- [ ] Форма авторизации: ввести токен → `host_auth`
-- [ ] После `auth_success`: выпадающий список задач из JSON + кнопка «Запустить»
-- [ ] `start_question` с выбранным `questionId` и `timeoutSec`
-- [ ] Счётчик «Ответили X / Y»
-- [ ] Кнопка «Завершить раунд» → `end_question`
+- [x] Форма авторизации: ввести токен → `host_auth`
+- [x] После `auth_success`: выпадающий список задач из JSON + кнопка «Запустить»
+- [x] `start_question` с выбранным `questionId` и `timeoutSec`
+- [x] Счётчик «Ответили X / Y»
+- [x] Кнопка «Завершить раунд» → `end_question`
 
 #### 1.11 Простой Scoreboard (~15 мин)
-- [ ] `client/src/components/Scoreboard.tsx`: принимает `scores[]`, рендерит таблицу
-- [ ] Обновляется при `leaderboard`-событии
-- [ ] Показывается на JoinPage после `round_result`
+- [x] `client/src/components/Scoreboard.tsx`: принимает `scores[]`, рендерит таблицу
+- [x] Обновляется при `leaderboard`-событии
+- [x] Показывается на JoinPage после `round_result`
 
 #### 1.12 Vite proxy + dev-запуск (~10 мин)
-- [ ] `../client/vite.config.ts`: proxy `/ws` → `ws://localhost:3000`, `/health` → `http://localhost:3000`
-- [ ] Проверить сквозной тест: открыть `/join`, ввести никнейм, ведущий запускает вопрос, студент отвечает, видит результат
+- [x] `../client/vite.config.ts`: proxy `/ws` → `ws://localhost:3000`, `/health` → `http://localhost:3000`
+- [x] Проверить сквозной тест: открыть `/join`, ввести никнейм, ведущий запускает вопрос, студент отвечает, видит результат
 
 ### Phase 2 — Полный игровой поток (~3–4 ч)
 
@@ -381,8 +381,8 @@ const remaining = Math.max(0, timeoutSec - elapsed);
 
 #### 3.6 Анимация +N очков у студента (~15 мин)
 - [x] После `round_result` с `correct: true`: показать `+1` анимацией
-- [ ] CSS `@keyframes`: fade-in → slide-up → fade-out (~2 с)
-- [ ] Реализовать через `useState<boolean>` + `onAnimationEnd` → сброс
+- [x] CSS `@keyframes`: fade-in → slide-up → fade-out (~2 с)
+- [x] Реализовать через `useState<boolean>` + `onAnimationEnd` → сброс
 
 #### 3.7 Reconnect toast (~15 мин)
 - [x] При переходе `closed → open` в `useSocket`: показать toast «Reconnected»
